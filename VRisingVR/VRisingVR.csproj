@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>VRisingVR</AssemblyName>
+    <RootNamespace>VRisingVR</RootNamespace>
+    <Description>Tabletop-style VR camera for V Rising (client only)</Description>
+    <Version>0.1.0</Version>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <!-- Generated OpenVR bindings produce a lot of noise. -->
+    <NoWarn>$(NoWarn);CS0649;CS0169;CS0414;CS8981</NoWarn>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+    <!-- Override with: dotnet build -p:GameDir="X:\path\to\VRising" -->
+    <GameDir Condition="'$(GameDir)' == ''">E:\Steam\steamapps\common\VRising</GameDir>
+    <BepInExDir>$(GameDir)\BepInEx</BepInExDir>
+    <PluginOutDir>$(BepInExDir)\plugins\VRisingVR</PluginOutDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- BepInEx core + interop assemblies generated on first game launch. -->
+    <Reference Include="$(BepInExDir)\core\BepInEx.Core.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\core\BepInEx.Unity.IL2CPP.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\core\Il2CppInterop.Runtime.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\core\Il2CppInterop.Common.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\core\0Harmony.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Il2Cppmscorlib.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Unity.InputSystem.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Unity.RenderPipelines.HighDefinition.Runtime.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Unity.RenderPipelines.Core.Runtime.dll" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="lib\openvr_api.dll" CopyToOutputDirectory="PreserveNewest" Link="openvr_api.dll" />
+  </ItemGroup>
+
+  <Target Name="DeployToGame" AfterTargets="Build" Condition="Exists('$(BepInExDir)') And '$(Deploy)' != 'false'">
+    <MakeDir Directories="$(PluginOutDir)" />
+    <Copy SourceFiles="$(TargetPath);$(OutDir)openvr_api.dll" DestinationFolder="$(PluginOutDir)" />
+    <Message Importance="high" Text="Deployed to $(PluginOutDir)" />
+  </Target>
+</Project>
