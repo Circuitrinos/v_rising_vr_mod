@@ -12,7 +12,7 @@ public class Plugin : BasePlugin
 {
     public const string Guid = "vrisingvr.tabletop";
     public const string Name = "VRisingVR";
-    public const string Version = "0.1.0";
+    public const string Version = PluginVersion.Value; // from <Version> in VRisingVR.csproj
 
     internal static ManualLogSource Logger;
 

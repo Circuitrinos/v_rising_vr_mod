@@ -4,7 +4,8 @@
     <AssemblyName>VRisingVR</AssemblyName>
     <RootNamespace>VRisingVR</RootNamespace>
     <Description>Tabletop-style VR camera for V Rising (client only)</Description>
-    <Version>0.1.0</Version>
+    <!-- The one place the version lives: the plugin, the Thunderstore manifest and the zip names use it. -->
+    <Version>1.0.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
@@ -17,6 +18,15 @@
     <GameDir Condition="'$(GameDir)' == ''">E:\Steam\steamapps\common\VRising</GameDir>
     <BepInExDir>$(GameDir)\BepInEx</BepInExDir>
     <PluginOutDir>$(BepInExDir)\plugins\VRisingVR</PluginOutDir>
+
+    <!-- Release zips (PackageMod below). The description is Thunderstore's one-liner: at most 250 characters,
+         and no semicolons (MSBuild would split the manifest line there). -->
+    <ThunderstoreName>VRisingVR</ThunderstoreName>
+    <ThunderstoreDescription>Play V Rising in VR like a 3D board game: the game's own top-down camera in stereo with head tracking, the HUD floating in front of you, and health bars and names over the characters. Client-side only. Needs SteamVR.</ThunderstoreDescription>
+    <ThunderstoreWebsite></ThunderstoreWebsite>
+    <ThunderstoreDependency>BepInEx-BepInExPack_V_Rising-1.733.2</ThunderstoreDependency>
+    <RepoDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..'))\</RepoDir>
+    <DistDir>$(RepoDir)dist\</DistDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,7 +39,21 @@
     <Reference Include="$(BepInExDir)\interop\Il2Cppmscorlib.dll" Private="false" />
     <Reference Include="$(BepInExDir)\interop\UnityEngine.dll" Private="false" />
     <Reference Include="$(BepInExDir)\interop\UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.ScreenCaptureModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.ImageConversionModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.TextRenderingModule.dll" Private="false" />
     <Reference Include="$(BepInExDir)\interop\Unity.InputSystem.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\ProjectM.Shared.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\ProjectM.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\ProjectM.Camera.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\ProjectM.HUD.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Stunlock.Core.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Unity.Entities.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Unity.Mathematics.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Unity.Collections.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.UI.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Unity.TextMeshPro.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.UIModule.dll" Private="false" />
     <Reference Include="$(BepInExDir)\interop\Unity.RenderPipelines.HighDefinition.Runtime.dll" Private="false" />
     <Reference Include="$(BepInExDir)\interop\Unity.RenderPipelines.Core.Runtime.dll" Private="false" />
   </ItemGroup>
@@ -42,5 +66,50 @@
     <MakeDir Directories="$(PluginOutDir)" />
     <Copy SourceFiles="$(TargetPath);$(OutDir)openvr_api.dll" DestinationFolder="$(PluginOutDir)" />
     <Message Importance="high" Text="Deployed to $(PluginOutDir)" />
+  </Target>
+
+  <!-- Plugin.Version comes from <Version> above. -->
+  <Target Name="WritePluginVersion" BeforeTargets="BeforeCompile">
+    <PropertyGroup>
+      <PluginVersionFile>$(IntermediateOutputPath)PluginVersion.g.cs</PluginVersionFile>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(PluginVersionFile)" Overwrite="true" WriteOnlyWhenDifferent="true"
+                      Lines="// Generated from the Version in VRisingVR.csproj.;namespace VRisingVR%3B;internal static class PluginVersion { public const string Value = &quot;$(Version)&quot;%3B }" />
+    <ItemGroup>
+      <Compile Include="$(PluginVersionFile)" />
+      <FileWrites Include="$(PluginVersionFile)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Release builds also write the release zips to ..\dist (skip with -p:Package=false):
+         VRisingVR-<version>.zip         for Thunderstore, and for r2modman's "Import local mod"
+         VRisingVR-<version>-manual.zip  to extract into the game folder (BepInEx\plugins\VRisingVR) -->
+  <Target Name="PackageMod" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' And '$(Package)' != 'false'">
+    <PropertyGroup>
+      <StageDir>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)package\</StageDir>
+      <ThunderstoreStage>$(StageDir)thunderstore\</ThunderstoreStage>
+      <ManualStage>$(StageDir)manual\</ManualStage>
+    </PropertyGroup>
+    <ItemGroup>
+      <ModFiles Include="$(TargetPath);$(OutDir)openvr_api.dll" />
+      <DocFiles Include="$(RepoDir)README.md;$(RepoDir)CHANGELOG.md;$(RepoDir)LICENSE;$(RepoDir)THIRD-PARTY-NOTICES.txt" />
+    </ItemGroup>
+    <Error Condition="!Exists('$(RepoDir)icon.png')" Text="icon.png (256x256) is missing from $(RepoDir)." />
+    <Error Condition="!Exists('%(DocFiles.FullPath)')" Text="%(DocFiles.FullPath) is missing." />
+    <Error Condition="$(ThunderstoreDescription.Length) &gt; 250" Text="ThunderstoreDescription has $(ThunderstoreDescription.Length) characters; Thunderstore allows 250." />
+    <Error Condition="$(ThunderstoreDescription.Contains(';')) Or $(ThunderstoreDescription.Contains('&quot;')) Or $(ThunderstoreDescription.Contains('\'))"
+           Text="ThunderstoreDescription can't contain a semicolon, double quote or backslash (they'd break manifest.json)." />
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(Version)', '^\d+\.\d+\.\d+$'))" Text="Version must be Major.Minor.Patch for Thunderstore, not $(Version)." />
+
+    <RemoveDir Directories="$(StageDir)" />
+    <Copy SourceFiles="@(ModFiles);@(DocFiles);$(RepoDir)icon.png" DestinationFolder="$(ThunderstoreStage)" />
+    <WriteLinesToFile File="$(ThunderstoreStage)manifest.json" Overwrite="true"
+                      Lines="{;&quot;name&quot;: &quot;$(ThunderstoreName)&quot;,;&quot;version_number&quot;: &quot;$(Version)&quot;,;&quot;website_url&quot;: &quot;$(ThunderstoreWebsite)&quot;,;&quot;description&quot;: &quot;$(ThunderstoreDescription)&quot;,;&quot;dependencies&quot;: [&quot;$(ThunderstoreDependency)&quot;];}" />
+    <Copy SourceFiles="@(ModFiles);@(DocFiles)" DestinationFolder="$(ManualStage)BepInEx\plugins\VRisingVR" />
+
+    <MakeDir Directories="$(DistDir)" />
+    <ZipDirectory SourceDirectory="$(ThunderstoreStage)" DestinationFile="$(DistDir)$(ThunderstoreName)-$(Version).zip" Overwrite="true" />
+    <ZipDirectory SourceDirectory="$(ManualStage)" DestinationFile="$(DistDir)$(ThunderstoreName)-$(Version)-manual.zip" Overwrite="true" />
+    <Message Importance="high" Text="Packaged $(DistDir)$(ThunderstoreName)-$(Version).zip (Thunderstore) and $(ThunderstoreName)-$(Version)-manual.zip" />
   </Target>
 </Project>
