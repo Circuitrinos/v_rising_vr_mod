@@ -5,7 +5,7 @@
     <RootNamespace>VRisingVR</RootNamespace>
     <Description>Tabletop-style VR camera for V Rising (client only)</Description>
     <!-- The one place the version lives: the plugin, the Thunderstore manifest and the zip names use it. -->
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>

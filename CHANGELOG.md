@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.1
+
+New default view settings, tuned in play-testing:
+
+- `View.WorldScale` 14.05 (was 8) and `View.HeightOffset` 2.57 (was 0).
+- `View.RenderScale` 1 (was 0.7), SteamVR's full recommended resolution. Lower it if your frame rate is low.
+- `HUD.Distance` 0.59 m and `HUD.Width` 0.71 m (were 1.1 m and 1.2 m).
+- `Screen.Distance` 3.1 m (was 2.5 m).
+
+A config file from 1.0.0 keeps its values. Delete `BepInEx\config\vrisingvr.tabletop.cfg` to get the new defaults.
+
 ## 1.0.0
 
 First release.

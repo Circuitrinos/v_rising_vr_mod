@@ -98,16 +98,16 @@ internal static class Settings
         AutoStart = cfg.Bind("General", "AutoStart", true,
             "Start VR automatically when the game launches. The toggle key turns it off and on.");
 
-        WorldScale = cfg.Bind("View", "WorldScale", 8f, new ConfigDescription(
+        WorldScale = cfg.Bind("View", "WorldScale", 14.05f, new ConfigDescription(
             "Game meters per real meter. Higher = the world looks smaller, like a tabletop.",
             new AcceptableValueRange<float>(1f, 50f)));
-        HeightOffset = cfg.Bind("View", "HeightOffset", 0f,
+        HeightOffset = cfg.Bind("View", "HeightOffset", 2.57f,
             "Extra height (game meters) added above the game camera position.");
         BackOffset = cfg.Bind("View", "BackOffset", 0f,
             "Extra distance (game meters) pulled back from the game camera, along its facing direction.");
         FollowCameraPitch = cfg.Bind("View", "FollowCameraPitch", false,
             "Tilt the VR view with the game camera's downward pitch. Off keeps the horizon level (more comfortable); look down to see the board.");
-        RenderScale = cfg.Bind("View", "RenderScale", 0.7f, new ConfigDescription(
+        RenderScale = cfg.Bind("View", "RenderScale", 1f, new ConfigDescription(
             "Multiplier on SteamVR's recommended per-eye resolution (each eye is a full HDRP render). Applied when VR starts.",
             new AcceptableValueRange<float>(0.5f, 2f)));
         DesktopMirror = cfg.Bind("View", "DesktopMirror", true,
@@ -127,10 +127,10 @@ internal static class Settings
 
         HudEnabled = cfg.Bind("HUD", "Enabled", true,
             "In the world, show the game's HUD, pause menu, map and other UI as a transparent layer over the VR view.");
-        HudDistance = cfg.Bind("HUD", "Distance", 1.1f,
+        HudDistance = cfg.Bind("HUD", "Distance", 0.59f,
             "Distance of the HUD layer in meters. Keep it nearer than the board, or the HUD is drawn over things that look closer than it.");
-        HudWidth = cfg.Bind("HUD", "Width", 1.2f,
-            "Width of the HUD layer in meters at the full Distance (1.2 at 1.1 m spans about 57 degrees). " +
+        HudWidth = cfg.Bind("HUD", "Width", 0.71f,
+            "Width of the HUD layer in meters at the full Distance (0.71 at 0.59 m spans about 62 degrees). " +
             "When the ground pulls the HUD closer, the width shrinks with it so the HUD keeps its size in view.");
         HudFollowCameraPitch = cfg.Bind("HUD", "FollowCameraPitch", true,
             "Tilt the HUD down to where the game camera looks (your character), so it frames the board like the desktop HUD.");
@@ -177,7 +177,7 @@ internal static class Settings
             "Show a virtual screen that mirrors the game window in the main menu and loading screens.");
         ScreenInWorld = cfg.Bind("Screen", "ShowInWorld", false,
             "Also show the virtual screen in the world, so the HUD, pause menu and map are visible. F7 toggles it.");
-        ScreenDistance = cfg.Bind("Screen", "Distance", 2.5f,
+        ScreenDistance = cfg.Bind("Screen", "Distance", 3.1f,
             "Distance of the virtual screen in meters. It is placed in front of you when first shown or re-centered.");
         ScreenWidth = cfg.Bind("Screen", "Width", 3f, "Width of the virtual screen in meters.");
         ScreenFlipVertical = cfg.Bind("Screen", "FlipVertical", false,

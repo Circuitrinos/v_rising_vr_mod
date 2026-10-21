@@ -188,6 +188,7 @@ After the 22:27 session the user called the mod "effectively perfect" and asked 
   - The old "Status" section is gone; the roadmap below is the status.
 - **Uploading is the user's step**, from their Thunderstore team at https://thunderstore.io/package/create/. Uploads can't be edited, so every change needs a new version.
   - `ThunderstoreWebsite` is empty because the git repository isn't public.
+- **1.0.1 (2026-10-21):** the user's tuned view settings became the defaults: WorldScale 14.05, HeightOffset 2.57, RenderScale 1, HUD 0.59 m / 0.71 m, Screen.Distance 3.1. The v1.0.0 commit was already on Forgejo, so the change shipped as a new version rather than a moved tag.
 
 ## Roadmap
 1. ~~Stereo world view in the headset with head tracking~~ (v0.1, untested on hardware)

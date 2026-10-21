@@ -14,7 +14,7 @@ The mod is client-side only. It doesn't change anything on the server, so there'
 - V Rising 1.1.13 on Windows (Steam), running on Direct3D 11, the game's default
 - [BepInExPack_V_Rising](https://thunderstore.io/c/v-rising/p/BepInEx/BepInExPack_V_Rising/) 1.733.2 (mod managers install it for you)
 - SteamVR and a headset that works with it. Tested with a Steam Frame streaming wirelessly through Steam Link.
-- A strong graphics card: the game renders the world once per eye. On an RTX 2070, expect roughly 40-60 fps at the default settings, less in busy areas.
+- A strong graphics card: the game renders the world once per eye, by default at SteamVR's full recommended resolution. On an RTX 2070 that runs at roughly 25-45 fps depending on the scene, and `View.RenderScale` 0.7 gets roughly 40-60.
 
 ## Installing
 
@@ -56,7 +56,7 @@ The F4 panel covers the settings you'll want to adjust while playing. All of the
 
 - `View.WorldScale`: how small the world looks. Higher is more like a tabletop.
 - `View.HeightOffset`: raises your viewpoint above the game camera.
-- `View.RenderScale`: per-eye resolution as a multiple of SteamVR's recommendation (default 0.7). It's applied when VR starts.
+- `View.RenderScale`: per-eye resolution as a multiple of SteamVR's recommendation (default 1). It's applied when VR starts.
 - `View.PerformanceMode`: skips the most expensive effects in the eyes (volumetric fog and clouds, screen-space reflections and GI, contact shadows). On by default.
 - `HUD.Distance` and `HUD.Width`: where the HUD layer floats and how big it is.
 - `Bars.Enabled` and `Bars.WidthMeters`: the 3D health bars and their size.
@@ -64,7 +64,7 @@ The F4 panel covers the settings you'll want to adjust while playing. All of the
 
 ## Performance tips
 
-- Lower `View.RenderScale` first. That's the biggest lever.
+- Lower `View.RenderScale` first, for example to 0.7. That's the biggest lever.
 - Lower V Rising's own shadow and ambient occlusion quality. Each eye renders with the game's quality settings.
 - Keep the game's resolution at your monitor's. The VR HUD is drawn at the window's resolution, so lowering it only blurs the HUD.
 - Close other programs that use the graphics card.
