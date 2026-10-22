@@ -204,6 +204,9 @@ After the 22:27 session the user called the mod "effectively perfect" and asked 
   - Uploads can't be edited or deleted. 'Manage Package' can deprecate a package or edit its categories.
   - A new upload shows on the site within minutes and in mod managers within up to 3 h (caching). V Rising listings need no approval: they are 'unreviewed' and visible, and only 'rejected' ones are hidden.
 - **Official servers:** Stunlock doesn't allow mods there (EULA 2026-04-15 §7; community developer, 2022: fine 'as long as you don't use them on official servers'). The README says so. No server-side detection of BepInEx clients is documented.
+- **Published 2026-10-22 01:41 UTC:** https://thunderstore.io/c/v-rising/p/Circuitrinos/VRisingVR/ (1.0.2). The API shows categories Client and Oakveil Update, review status 'unreviewed' (visible), and the BepInExPack dependency; the README renders in full. `main` and `v1.0.2` are pushed. Next release: raise `<Version>`, add a CHANGELOG entry, build (with the profile's BepInExDir), commit, tag, push, then upload the new zip.
+  - The mod managers' V Rising list (`/c/v-rising/api/v1/package-listing-index/`, a periodically rebuilt snapshot) had VRisingVR at 02:05 UTC, about 25 min after the upload; the snapshot before it was built at 01:33:57. Installing it from TMM's Get mods then installed BepInExPack_V_Rising automatically (user-verified, 2026-10-22).
+- **Repo prepared for a public GitHub mirror (2026-10-22):** the history was rewritten so every commit and tag uses the public alias `services+github_issues@circuitrinos.com`, which is also the repo-local `user.email`; keep committing with it. Personal notes about the test PC were reworded, the Forgejo address was removed, LICENSE names Circuitrinos, `documentation/LICENSE` carries the V Rising Modding wiki's MIT notice, and `.obsidian/workspace.json` is no longer tracked.
 
 ## Roadmap
 1. ~~Stereo world view in the headset with head tracking~~ (v0.1, untested on hardware)
@@ -216,4 +219,4 @@ After the 22:27 session the user called the mod "effectively perfect" and asked 
 4b. ~~Health bars over the characters in 3D~~ (v0.9, working). Phase 2: ~~names, levels and icons~~ (v0.12, working); combat text and the interact prompt as 3D elements
 5. An in-game settings panel in the Options menu (currently BepInEx config + hotkeys)
 6. ~~Performance: option to skip desktop rendering and show a mirror of the left eye instead~~ (v0.10, `View.DesktopMirror`)
-7. ~~Release packaging~~ (1.0.0): `dotnet build -c Release` writes the Thunderstore and manual zips to `dist\` (see Release packaging)
+7. ~~Release packaging~~ (1.0.0): `dotnet build -c Release` writes the Thunderstore and manual zips to `dist\` (see Release packaging). Published on Thunderstore as Circuitrinos-VRisingVR (1.0.2, 2026-10-22).
