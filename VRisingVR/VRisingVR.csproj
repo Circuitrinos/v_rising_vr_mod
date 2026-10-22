@@ -5,7 +5,7 @@
     <RootNamespace>VRisingVR</RootNamespace>
     <Description>Tabletop-style VR camera for V Rising (client only)</Description>
     <!-- The one place the version lives: the plugin, the Thunderstore manifest and the zip names use it. -->
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
@@ -26,7 +26,7 @@
          Thunderstore's own downloads, because r2modman's "Import local mod" takes the author from that file name. -->
     <ThunderstoreTeam>Circuitrinos</ThunderstoreTeam>
     <ThunderstoreDescription>Play V Rising in VR like a 3D board game: the game's own top-down camera in stereo with head tracking, the HUD floating in front of you, and health bars and names over the characters. Client-side only. Needs SteamVR.</ThunderstoreDescription>
-    <ThunderstoreWebsite></ThunderstoreWebsite>
+    <ThunderstoreWebsite>https://github.com/Circuitrinos/v_rising_vr_mod</ThunderstoreWebsite>
     <ThunderstoreDependency>BepInEx-BepInExPack_V_Rising-1.733.2</ThunderstoreDependency>
     <RepoDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..'))\</RepoDir>
     <DistDir>$(RepoDir)dist\</DistDir>

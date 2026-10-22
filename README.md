@@ -130,11 +130,15 @@ Common problems:
 - **The BepInEx console shows `System.AccessViolationException`:** your antivirus is probably blocking BepInEx. Allow it in your security software.
 - **Nothing in the headset:** make sure SteamVR is installed and sees your headset, then press F8 in the game. The log says why VR didn't start (look for lines with `VRisingVR`).
 - **Low frame rate:** see the performance tips above. The log prints a `Perf:` line every 5 seconds with the frame rate and GPU time.
-- **Something looks wrong:** press F5 for a 3D capture and include it, along with the log, when you report the problem.
+- **Something looks wrong:** press F5 for a 3D capture and include it, along with the log, when you report the problem (see below).
+
+## Feedback and bug reports
+
+Report bugs and suggest improvements on [GitHub Issues](https://github.com/Circuitrinos/v_rising_vr_mod/issues). You need a free GitHub account. For a bug, attach your `LogOutput.log`, plus an F5 capture if it's something you can see; Troubleshooting above says where to find them.
 
 ## Building from source
 
-You need the .NET SDK (6 or newer) and the game with BepInExPack_V_Rising installed and started once, so that `BepInEx\interop` exists.
+The source code is on [GitHub](https://github.com/Circuitrinos/v_rising_vr_mod). You need the .NET SDK (6 or newer) and the game with BepInExPack_V_Rising installed and started once, so that `BepInEx\interop` exists.
 
 ```
 cd VRisingVR

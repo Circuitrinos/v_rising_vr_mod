@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.3
+
+No changes to the mod itself.
+
+- Report bugs and suggest improvements on [GitHub Issues](https://github.com/Circuitrinos/v_rising_vr_mod/issues).
+- The source code is public on GitHub, and the Thunderstore page links to it.
+
 ## 1.0.2
 
 No changes to the mod itself.
