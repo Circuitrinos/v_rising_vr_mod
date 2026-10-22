@@ -5,7 +5,7 @@
     <RootNamespace>VRisingVR</RootNamespace>
     <Description>Tabletop-style VR camera for V Rising (client only)</Description>
     <!-- The one place the version lives: the plugin, the Thunderstore manifest and the zip names use it. -->
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
@@ -22,6 +22,9 @@
     <!-- Release zips (PackageMod below). The description is Thunderstore's one-liner: at most 250 characters,
          and no semicolons (MSBuild would split the manifest line there). -->
     <ThunderstoreName>VRisingVR</ThunderstoreName>
+    <!-- The Thunderstore team that uploads the package. The Thunderstore zip is named Team-Name-Version.zip, like
+         Thunderstore's own downloads, because r2modman's "Import local mod" takes the author from that file name. -->
+    <ThunderstoreTeam>Circuitrinos</ThunderstoreTeam>
     <ThunderstoreDescription>Play V Rising in VR like a 3D board game: the game's own top-down camera in stereo with head tracking, the HUD floating in front of you, and health bars and names over the characters. Client-side only. Needs SteamVR.</ThunderstoreDescription>
     <ThunderstoreWebsite></ThunderstoreWebsite>
     <ThunderstoreDependency>BepInEx-BepInExPack_V_Rising-1.733.2</ThunderstoreDependency>
@@ -62,6 +65,13 @@
     <None Include="lib\openvr_api.dll" CopyToOutputDirectory="PreserveNewest" Link="openvr_api.dll" />
   </ItemGroup>
 
+  <!-- Thunderstore's rules: code written with AI must say which AI in the assembly metadata (and in the README).
+       https://wiki.thunderstore.io/llms-and-ai-generated-files -->
+  <ItemGroup>
+    <AssemblyMetadata Include="AI_Assisted_Creation" Value="This assembly was created with the assistance of generative AI: its code was written by Claude (Anthropic) through Claude Code." />
+    <AssemblyMetadata Include="AI_Model_Vendor" Value="Anthropic" />
+  </ItemGroup>
+
   <Target Name="DeployToGame" AfterTargets="Build" Condition="Exists('$(BepInExDir)') And '$(Deploy)' != 'false'">
     <MakeDir Directories="$(PluginOutDir)" />
     <Copy SourceFiles="$(TargetPath);$(OutDir)openvr_api.dll" DestinationFolder="$(PluginOutDir)" />
@@ -82,13 +92,15 @@
   </Target>
 
   <!-- Release builds also write the release zips to ..\dist (skip with -p:Package=false):
-         VRisingVR-<version>.zip         for Thunderstore, and for r2modman's "Import local mod"
+         <Team>-VRisingVR-<version>.zip  for Thunderstore, and for r2modman's "Import local mod"
          VRisingVR-<version>-manual.zip  to extract into the game folder (BepInEx\plugins\VRisingVR) -->
   <Target Name="PackageMod" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' And '$(Package)' != 'false'">
     <PropertyGroup>
       <StageDir>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)package\</StageDir>
       <ThunderstoreStage>$(StageDir)thunderstore\</ThunderstoreStage>
       <ManualStage>$(StageDir)manual\</ManualStage>
+      <ThunderstoreZip>$(DistDir)$(ThunderstoreTeam)-$(ThunderstoreName)-$(Version).zip</ThunderstoreZip>
+      <ManualZip>$(DistDir)$(ThunderstoreName)-$(Version)-manual.zip</ManualZip>
     </PropertyGroup>
     <ItemGroup>
       <ModFiles Include="$(TargetPath);$(OutDir)openvr_api.dll" />
@@ -100,6 +112,8 @@
     <Error Condition="$(ThunderstoreDescription.Contains(';')) Or $(ThunderstoreDescription.Contains('&quot;')) Or $(ThunderstoreDescription.Contains('\'))"
            Text="ThunderstoreDescription can't contain a semicolon, double quote or backslash (they'd break manifest.json)." />
     <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(Version)', '^\d+\.\d+\.\d+$'))" Text="Version must be Major.Minor.Patch for Thunderstore, not $(Version)." />
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(ThunderstoreTeam)', '^[A-Za-z0-9_]+$'))"
+           Text="ThunderstoreTeam may only use letters, digits and underscores (r2modman splits the zip name at hyphens), not $(ThunderstoreTeam)." />
 
     <RemoveDir Directories="$(StageDir)" />
     <Copy SourceFiles="@(ModFiles);@(DocFiles);$(RepoDir)icon.png" DestinationFolder="$(ThunderstoreStage)" />
@@ -108,8 +122,8 @@
     <Copy SourceFiles="@(ModFiles);@(DocFiles)" DestinationFolder="$(ManualStage)BepInEx\plugins\VRisingVR" />
 
     <MakeDir Directories="$(DistDir)" />
-    <ZipDirectory SourceDirectory="$(ThunderstoreStage)" DestinationFile="$(DistDir)$(ThunderstoreName)-$(Version).zip" Overwrite="true" />
-    <ZipDirectory SourceDirectory="$(ManualStage)" DestinationFile="$(DistDir)$(ThunderstoreName)-$(Version)-manual.zip" Overwrite="true" />
-    <Message Importance="high" Text="Packaged $(DistDir)$(ThunderstoreName)-$(Version).zip (Thunderstore) and $(ThunderstoreName)-$(Version)-manual.zip" />
+    <ZipDirectory SourceDirectory="$(ThunderstoreStage)" DestinationFile="$(ThunderstoreZip)" Overwrite="true" />
+    <ZipDirectory SourceDirectory="$(ManualStage)" DestinationFile="$(ManualZip)" Overwrite="true" />
+    <Message Importance="high" Text="Packaged $(ThunderstoreZip) (Thunderstore) and $(ManualZip)" />
   </Target>
 </Project>

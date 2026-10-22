@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.2
+
+No changes to the mod itself.
+
+- New install instructions for players who are new to mod managers: installing from Thunderstore, importing a downloaded zip, installing by hand, updating and uninstalling.
+- The README and the plugin's assembly metadata now say the mod was made with AI, as Thunderstore's rules require.
+- The Thunderstore zip is named `Circuitrinos-VRisingVR-<version>.zip`, so a mod manager shows the author when you import it.
+- The README notes that Stunlock Studios doesn't allow mods on its official servers.
+
 ## 1.0.1
 
 New default view settings, tuned in play-testing:

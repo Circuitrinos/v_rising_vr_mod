@@ -169,7 +169,7 @@ After the 22:27 session the user called the mod "effectively perfect" and asked 
   - The `WritePluginVersion` target generates `obj\...\PluginVersion.g.cs`, and `Plugin.Version` uses it.
   - So the BepInPlugin attribute, the manifest and the zip names always agree.
 - **Zips:** Release builds run `PackageMod` after the deploy (skip it with `-p:Package=false`; `dist/` is git-ignored).
-  - `dist\VRisingVR-<version>.zip`: for Thunderstore, and for r2modman's Import local mod.
+  - `dist\Circuitrinos-VRisingVR-<version>.zip` (`<ThunderstoreTeam>-<Name>-<version>.zip`, like Thunderstore's own downloads): for Thunderstore, and for r2modman's Import local mod. That dialog (r2modman 3.2.20, `LocalFileImportModal.vue`) takes name, version and description from a Thunderstore manifest but infers the **author from the file name**: exactly three hyphen-separated parts, else \"Unknown\". A manifest only gives an author through an `author` key, which Thunderstore's format doesn't define, so the file name carries it.
   - `dist\VRisingVR-<version>-manual.zip`: holds `BepInEx/plugins/VRisingVR/...`; extract it into the game folder.
   - Both carry README.md, CHANGELOG.md, LICENSE (MIT) and THIRD-PARTY-NOTICES.txt. OpenVR is BSD-3-Clause, which requires its notice in binary distributions.
 - **Thunderstore rules.** The first zips were validated against these (2026-10-20):
@@ -182,13 +182,28 @@ After the 22:27 session the user called the mod "effectively perfect" and asked 
 - **r2modman** installs the root DLLs and other root files into `BepInEx\plugins\<Team>-VRisingVR\`.
   - `OpenVRLoader` loads `openvr_api.dll` from the plugin assembly's folder, so any folder name works.
   - BepInEx doesn't complain about the native DLL in plugins.
+- **First Thunderstore Mod Manager test (2026-10-21):** the user zipped the source project folder (`VRisingVR\` with bin and obj) and imported that. The dialog showed version 0.0.0 and author Unknown (no manifest.json at the zip root). The files landed flattened in `plugins\Unknown-VRisingVR\`, and BepInEx loaded a 242 KB **reference assembly** of VRisingVR.dll from obj: `BadImageFormatException: Cannot load a reference assembly for execution`. Only the built package zip works.
+  - TMM's profile is `%APPDATA%\Thunderstore Mod Manager\DataFolder\VRising\profiles\Default\`, with its own `BepInEx\` (interop, config, LogOutput.log). After a modded start the game folder had `winhttp.dll`, `doorstop_config.ini`, `.doorstop_version`, `dotnet\` and a `.thunderstoremm` marker, but no `BepInEx\`.
+  - **Since then the game folder has no BepInEx, so builds need the profile's:** `dotnet build -c Release -p:Deploy=false "-p:BepInExDir=%APPDATA%\Thunderstore Mod Manager\DataFolder\VRising\profiles\Default\BepInEx"` (expand %APPDATA%). Keep Deploy off: it would copy a second VRisingVR into the profile's plugins.
 - **Icon:** `icon.png` at the repo root, drawn with PIL: a headset over an isometric board, in crimson. Any 256×256 PNG can replace it.
 - **README** is written for players: installing, playing, keys, settings, tips, limits, troubleshooting. "Building from source" and the release steps come last.
   - Thunderstore renders it, so it has no relative links.
   - The old "Status" section is gone; the roadmap below is the status.
-- **Uploading is the user's step**, from their Thunderstore team at https://thunderstore.io/package/create/. Uploads can't be edited, so every change needs a new version.
+- **Uploading is the user's step**, from their Thunderstore team (`ThunderstoreTeam`, Circuitrinos) at https://thunderstore.io/package/create/. Uploads can't be edited, so every change needs a new version.
   - `ThunderstoreWebsite` is empty because the git repository isn't public.
 - **1.0.1 (2026-10-21):** the user's tuned view settings became the defaults: WorldScale 14.05, HeightOffset 2.57, RenderScale 1, HUD 0.59 m / 0.71 m, Screen.Distance 3.1. The v1.0.0 commit was already on Forgejo, so the change shipped as a new version rather than a moved tag.
+- **1.0.2 (2026-10-21):** README install guide rewritten for first-time mod manager users, plus the AI disclosure. No code changes. The facts come from workflow wf_9efb9646-36a, which read TMM 1.125.2's installed source maps, r2modman 3.2.20's source and the live thunderstore.io:
+  - TMM labels: 'Get mods', 'My mods', 'Modded', 'Vanilla', 'Edit config', 'Settings'. r2modman's are 'Online', 'Installed', 'Start modded', 'Config editor'.
+  - Import local mod: Settings > Profile > 'Import local mod'. It is a single-file picker, so folders can't be imported. It does not install dependencies (without BepInExPack the start fails with 'Failed to find preloader dll'), and the import is named `<author from file name>-<name>`. Named like the online package (Circuitrinos-VRisingVR), it is matched by full name, so it gets update notices and 'Mod already installed'; with another author (Unknown) it never does. BepInEx loads only the highest version of duplicate GUIDs.
+  - Starting the game from Steam runs it vanilla, because BepInEx\ stays in the profile.
+  - thunderstore.io's redesigned site (2026-08-26) labels the package buttons 'Install with App' (ror2mm://, which needs the manager open on the game and a profile) and 'Download' (the legacy site says 'Install with Mod Manager' / 'Manual Download').
+- **Thunderstore requires an AI disclosure** (wiki 'LLMs and AI-generated files' and Global Rules, checked 2026-10-21). The README must say AI was used, and AI-generated code must name the AI in the csproj's AssemblyMetadata (`AI_Assisted_Creation`, `AI_Model_Vendor`). Undisclosed AI mods may be removed, and 'untested or non-functional AI-generated mods' count as spam. Communities with an 'AI Generated' category need it set; V Rising had none on 2026-10-21. Keep both in every release.
+- **Upload form** (Thunderstore wiki 'Your First Upload'): Upload file, Team, Communities (V Rising), Categories, and 'Contains NSFW content' (No; it isn't carried over between versions).
+  - Categories: Client and Oakveil Update (V Rising 1.1 is Oakveil; that category is the 'Oakveil Update' section).
+  - The team name is permanent, and a team with packages can't be deleted.
+  - Uploads can't be edited or deleted. 'Manage Package' can deprecate a package or edit its categories.
+  - A new upload shows on the site within minutes and in mod managers within up to 3 h (caching). V Rising listings need no approval: they are 'unreviewed' and visible, and only 'rejected' ones are hidden.
+- **Official servers:** Stunlock doesn't allow mods there (EULA 2026-04-15 §7; community developer, 2022: fine 'as long as you don't use them on official servers'). The README says so. No server-side detection of BepInEx clients is documented.
 
 ## Roadmap
 1. ~~Stereo world view in the headset with head tracking~~ (v0.1, untested on hardware)
