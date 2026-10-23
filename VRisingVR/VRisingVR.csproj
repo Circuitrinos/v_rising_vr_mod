@@ -16,7 +16,14 @@
 
     <!-- Override with: dotnet build -p:GameDir="X:\path\to\VRising" -->
     <GameDir Condition="'$(GameDir)' == ''">E:\Steam\steamapps\common\VRising</GameDir>
-    <BepInExDir>$(GameDir)\BepInEx</BepInExDir>
+    <!-- BepInEx in the game folder, or else in a mod manager's Default profile (Thunderstore Mod Manager, then
+         r2modman). Override with -p:BepInExDir="...". -->
+    <TmmBepInEx>$(APPDATA)\Thunderstore Mod Manager\DataFolder\VRising\profiles\Default\BepInEx</TmmBepInEx>
+    <R2mmBepInEx>$(APPDATA)\r2modmanPlus-local\VRising\profiles\Default\BepInEx</R2mmBepInEx>
+    <BepInExDir Condition="'$(BepInExDir)' == '' And Exists('$(GameDir)\BepInEx\core')">$(GameDir)\BepInEx</BepInExDir>
+    <BepInExDir Condition="'$(BepInExDir)' == '' And Exists('$(TmmBepInEx)\core')">$(TmmBepInEx)</BepInExDir>
+    <BepInExDir Condition="'$(BepInExDir)' == '' And Exists('$(R2mmBepInEx)\core')">$(R2mmBepInEx)</BepInExDir>
+    <BepInExDir Condition="'$(BepInExDir)' == ''">$(GameDir)\BepInEx</BepInExDir>
     <PluginOutDir>$(BepInExDir)\plugins\VRisingVR</PluginOutDir>
 
     <!-- Release zips (PackageMod below). The description is Thunderstore's one-liner: at most 250 characters,
