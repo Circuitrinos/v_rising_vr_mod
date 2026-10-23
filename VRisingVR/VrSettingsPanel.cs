@@ -161,7 +161,7 @@ internal sealed class VrSettingsPanel
         canvas.sortingOrder = short.MaxValue - 1; // above the game UI, below the VR cursor
         _root.AddComponent<GraphicRaycaster>();
 
-        var rows = new (ConfigEntry<float> entry, string label, float min, float max, string format)[]
+        var rows = new List<(ConfigEntry<float> entry, string label, float min, float max, string format)>
         {
             (Settings.HudDistance, "HUD distance (m)", 0.4f, 3f, "0.00"),
             (Settings.HudWidth, "HUD width (m)", 0.4f, 3f, "0.00"),
@@ -175,10 +175,20 @@ internal sealed class VrSettingsPanel
             (Settings.HeightOffset, "View height (game m)", -20f, 20f, "0.0"),
             (Settings.ScreenDistance, "Menu screen distance (m)", 1f, 5f, "0.0"),
         };
+        // Only for players who set up the Steam Frame passthrough server.
+        if (Settings.PassthroughEnabled.Value)
+        {
+            rows.Add((Settings.PassthroughOpacity, "Passthrough opacity", 0.1f, 1f, "0.00"));
+            rows.Add((Settings.PassthroughLookDownAngle, "Passthrough look-down angle (degrees)", 10f, 85f, "0"));
+            rows.Add((Settings.PassthroughFieldOfView, "Passthrough field of view (degrees)", 40f, 160f, "0"));
+            rows.Add((Settings.PassthroughVerticalOffset, "Passthrough vertical offset (degrees)", -45f, 45f, "0.0"));
+            rows.Add((Settings.PassthroughHorizontalOffset, "Passthrough horizontal offset (degrees)", -45f, 45f, "0.0"));
+        }
 
         const float width = 680f;
-        const float rowHeight = 64f;
-        float height = 90f + rows.Length * rowHeight + 20f;
+        // Shorter rows when there are many, so the panel still fits a 1080p screen.
+        float rowHeight = rows.Count > 12 ? 54f : 64f;
+        float height = 90f + rows.Count * rowHeight + 20f;
 
         RectTransform panel = CreateRect("Panel", _root.transform, new Vector2(width, height));
         Image background = panel.gameObject.AddComponent<Image>();
@@ -187,7 +197,7 @@ internal sealed class VrSettingsPanel
         CreateText(panel, $"VR settings  ({Settings.SettingsKey.Value} closes)", new Vector2(0f, height / 2f - 40f),
             new Vector2(width - 40f, 44f), 26);
 
-        for (int i = 0; i < rows.Length; i++)
+        for (int i = 0; i < rows.Count; i++)
         {
             var row = rows[i];
             float y = height / 2f - 90f - i * rowHeight - rowHeight / 2f;

@@ -63,6 +63,7 @@ public class VRRig : MonoBehaviour
     private readonly GameHud _gameHud = new();
     private readonly WorldBars _bars = new();
     private readonly DesktopMirror _mirror = new();
+    private readonly PassthroughPanel _passthrough = new();
     // The health bars and the ground cursor, drawn into the eye images after they render (DrawEyeOverlays).
     private bool _barsWanted;
     private bool _reticleWanted;
@@ -369,6 +370,7 @@ public class VRRig : MonoBehaviour
         bool screenToggle = Hotkeys.Pressed(Settings.ScreenToggleKey.Value);
         bool isolate = Hotkeys.Pressed(Settings.IsolationKey.Value);
         bool capture = Hotkeys.Pressed(Settings.CaptureKey.Value);
+        bool passthroughToggle = Hotkeys.Pressed(Settings.PassthroughKey.Value);
 
         if (toggle)
         {
@@ -389,6 +391,9 @@ public class VRRig : MonoBehaviour
             Recenter("recenter key");
             _toast.Show("Recentered");
         }
+
+        if (passthroughToggle)
+            _toast.Show(_passthrough.TogglePinned());
 
         if (capture)
         {
@@ -467,6 +472,7 @@ public class VRRig : MonoBehaviour
         // (F7) replaces it rather than stacking on top of it.
         _hud.Tick(inWorld && Settings.HudEnabled.Value && !screenWanted, inWorld ? ComputeHudAnchor(game) : default);
         UpdateCursors(inWorld);
+        _passthrough.Tick(havePose, _renderedPose);
 
         if (!havePose)
         {
@@ -948,6 +954,7 @@ public class VRRig : MonoBehaviour
         _bars.Destroy();
         _gameHud.Reset();
         _mirror.Destroy();
+        _passthrough.Destroy();
         _overlayCommands?.Release();
         _overlayCommands = null;
         RestoreFramePacing();
@@ -1181,7 +1188,8 @@ public class VRRig : MonoBehaviour
             (haveTiming ? $" | last frame: interval={timing.m_flClientFrameIntervalMs:F1}ms gpu={timing.m_flTotalRenderGpuMs:F1}ms" : "") +
             $" | poses paired={pairing.paired} stale={pairing.stale} other={pairing.other} syncs={_poseFlushes}" +
             $" ({(_poseFromCompositor ? "compositor" : "predicted")})" +
-            (_gameHud.TakeStats() is string hudStats ? $" | {hudStats}" : ""));
+            (_gameHud.TakeStats() is string hudStats ? $" | {hudStats}" : "") +
+            (_passthrough.TakeStats() is string passthroughStats ? $" | {passthroughStats}" : ""));
         _poseFlushes = 0;
 
         _lastStats = now;

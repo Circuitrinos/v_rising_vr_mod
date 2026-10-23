@@ -77,6 +77,22 @@ internal static class Settings
     public static ConfigEntry<bool> ScreenFlipVertical;
     public static ConfigEntry<bool> ScreenCursor;
 
+    public static ConfigEntry<bool> PassthroughEnabled;
+    public static ConfigEntry<string> PassthroughHost;
+    public static ConfigEntry<int> PassthroughPort;
+    public static ConfigEntry<string> PassthroughToken;
+    public static ConfigEntry<int> PassthroughResolution;
+    public static ConfigEntry<int> PassthroughFps;
+    public static ConfigEntry<bool> PassthroughLookDown;
+    public static ConfigEntry<float> PassthroughLookDownAngle;
+    public static ConfigEntry<float> PassthroughOpacity;
+    public static ConfigEntry<float> PassthroughFieldOfView;
+    public static ConfigEntry<float> PassthroughCropLeft;
+    public static ConfigEntry<float> PassthroughHorizontalOffset;
+    public static ConfigEntry<float> PassthroughVerticalOffset;
+    public static ConfigEntry<float> PassthroughDistance;
+    public static ConfigEntry<Key> PassthroughKey;
+
     public static ConfigEntry<Key> ToggleKey;
     public static ConfigEntry<Key> ScreenToggleKey;
     public static ConfigEntry<Key> IsolationKey;
@@ -183,6 +199,47 @@ internal static class Settings
         ScreenFlipVertical = cfg.Bind("Screen", "FlipVertical", false,
             "Flip the virtual screen vertically. Use this if it appears upside down.");
         ScreenCursor = cfg.Bind("Screen", "ShowCursor", true, "Draw the mouse cursor on the virtual screen.");
+
+        PassthroughEnabled = cfg.Bind("Passthrough", "Enabled", false,
+            "Steam Frame only: show the headset's camera view, to see your keyboard and mouse. Needs the VRisingVR passthrough " +
+            "server installed on the headset (see the README) and its token below.");
+        PassthroughHost = cfg.Bind("Passthrough", "Host", "frame.local", "The headset's network name or IP address.");
+        PassthroughPort = cfg.Bind("Passthrough", "Port", 47816, "The passthrough server's port.");
+        PassthroughToken = cfg.Bind("Passthrough", "Token", "",
+            "The secret the server created on the headset, in ~/.config/vrisingvr-passthrough/token. It keeps others on your network out of the camera.");
+        PassthroughResolution = cfg.Bind("Passthrough", "Resolution", 960, new ConfigDescription(
+            "Width of the camera frames in pixels (16:9). Higher is sharper but costs more network and decoding time.",
+            new AcceptableValueRange<int>(320, 1920)));
+        PassthroughFps = cfg.Bind("Passthrough", "FrameRate", 30, new ConfigDescription(
+            "Camera frames per second.", new AcceptableValueRange<int>(5, 60)));
+        PassthroughLookDown = cfg.Bind("Passthrough", "ShowWhenLookingDown", true,
+            "Fade the camera view in while you look down past LookDownAngle, toward your desk.");
+        PassthroughLookDownAngle = cfg.Bind("Passthrough", "LookDownAngle", 45f, new ConfigDescription(
+            "Degrees below the horizon at which the camera view appears. Keep it steeper than where you look at the board.",
+            new AcceptableValueRange<float>(10f, 85f)));
+        PassthroughOpacity = cfg.Bind("Passthrough", "Opacity", 1f, new ConfigDescription(
+            "Opacity of the camera view.", new AcceptableValueRange<float>(0.1f, 1f)));
+        // SteamVR's camera image spans the left eye's whole view: on the Steam Frame its tangents are -1.661..1.216
+        // across and -1.729..1.172 vertically, i.e. about 110 degrees wide, centred 12.5 degrees left and 15.5 below.
+        PassthroughFieldOfView = cfg.Bind("Passthrough", "FieldOfView", 110f, new ConfigDescription(
+            "Horizontal field of view of the camera image in degrees (the Steam Frame's left eye sees about 110). Adjust it, " +
+            "with the offsets, until your desk lines up with where it really is.",
+            new AcceptableValueRange<float>(40f, 160f)));
+        PassthroughCropLeft = cfg.Bind("Passthrough", "CropLeft", 0.12f, new ConfigDescription(
+            "Fraction of the image cut off on the left. SteamVR's image is your left eye's view, which reaches further left " +
+            "than the camera covers; there it stretches the edge pixels sideways (5-10% of the width).",
+            new AcceptableValueRange<float>(0f, 0.5f)));
+        PassthroughHorizontalOffset = cfg.Bind("Passthrough", "HorizontalOffset", -12.5f, new ConfigDescription(
+            "Moves the camera view right (positive) or left, in degrees. The left eye's view is centred about 12.5 degrees left.",
+            new AcceptableValueRange<float>(-45f, 45f)));
+        PassthroughVerticalOffset = cfg.Bind("Passthrough", "VerticalOffset", -15.5f, new ConfigDescription(
+            "Moves the camera view up (positive) or down, in degrees. The left eye's view is centred about 15.5 degrees down.",
+            new AcceptableValueRange<float>(-45f, 45f)));
+        PassthroughDistance = cfg.Bind("Passthrough", "Distance", 0.6f, new ConfigDescription(
+            "How far away the camera view floats, in meters. About your desk's distance looks most natural.",
+            new AcceptableValueRange<float>(0.2f, 3f)));
+        PassthroughKey = cfg.Bind("Keys", "Passthrough", Key.F3,
+            "Keep the headset camera view on, or back to showing it only while looking down (Steam Frame passthrough).");
 
         ToggleKey = cfg.Bind("Keys", "ToggleVR", Key.F8, "Start/stop VR.");
         IsolationKey = cfg.Bind("Keys", "CycleEyeIsolation", Key.F6,

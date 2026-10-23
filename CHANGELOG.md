@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0 (in development)
+
+- Passthrough on the Steam Frame: look down at your desk (or press F3) to see your keyboard, mouse and hands through the headset's camera. Needs a small server installed on the headset; see the README.
+
 ## 1.0.3
 
 No changes to the mod itself.

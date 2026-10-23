@@ -83,6 +83,7 @@ Hotkeys only work while the game window has focus. A short message in the headse
 
 | Key | Action |
 | --- | --- |
+| F3 | Steam Frame passthrough: keep the camera view on, or go back to showing it only while you look down (see "Passthrough on the Steam Frame") |
 | F4 | Open/close the VR settings panel: HUD distance, width, tilt and ground margin, cursor and health bar size, world scale, near clip, stereo strength, view height, menu screen distance |
 | F7 | Show/hide the virtual screen while in the world |
 | F8 | Stop/start VR |
@@ -109,6 +110,33 @@ The F4 panel covers the settings you'll want to adjust while playing. All of the
 - Lower V Rising's own shadow and ambient occlusion quality. Each eye renders with the game's quality settings.
 - Keep the game's resolution at your monitor's. The VR HUD is drawn at the window's resolution, so lowering it only blurs the HUD.
 - Close other programs that use the graphics card.
+
+## Passthrough on the Steam Frame (optional)
+
+On a Steam Frame, VRisingVR can show the headset's camera view while you look down at your desk, so you can see your keyboard, mouse and hands. Press **F3** to keep it on. This is an advanced, optional feature: SteamVR doesn't give PC games access to the Frame's cameras, so a small server you install on the headset sends the camera view to the mod over your network. It was tested with the Arcturus color camera attached; without it, it's untested.
+
+**Setting it up:**
+
+1. On the headset, turn on Developer Mode (**Steam Settings > System > Enable Developer Mode**) and set a password.
+2. Download this mod's source from [GitHub](https://github.com/Circuitrinos/v_rising_vr_mod) (**Code > Download ZIP**) and extract it. You only need its `headset` folder.
+3. On your PC, open PowerShell in the extracted folder and install the server. Each command asks for the headset password:
+   ```
+   scp -r headset steamos@frame:/tmp/vrisingvr-headset
+   ssh steamos@frame "bash /tmp/vrisingvr-headset/install.sh"
+   ssh steamos@frame "cat ~/.config/vrisingvr-passthrough/token"
+   ```
+   The last command prints the server's secret token. It keeps others on your network out of the camera, so don't share it.
+4. In the mod's settings file (`vrisingvr.tabletop.cfg`, see Settings above), set `Enabled = true` and paste the token after `Token = ` in the `[Passthrough]` section. The section appears after the first start with 1.1.0 or later.
+
+The server starts with the headset and only uses the camera while the mod is connected. To check it works without the game, open `http://frame.local:47816` in a browser and enter the token: the page shows the camera view live, and the token ready to copy. The picture only updates while you wear the headset. When it's off your head, SteamVR's standby pauses the cameras, and the page says "Paused".
+
+**Adjusting it** (F4 panel, while passthrough is enabled):
+
+- **Look-down angle:** how far below the horizon you look before the camera view appears (default 45°). Keep it steeper than where you look at the board.
+- **Opacity.**
+- **Field of view** and the **vertical** and **horizontal offsets:** line the camera view up with your real desk. Touch a key and move until your hand shows where it really is.
+
+Leaving Developer Mode on keeps SSH open to your network; turn it off when you don't need it. To remove the server, run `ssh steamos@frame "systemctl --user disable --now vrisingvr-passthrough"` and delete `~/.local/share/vrisingvr-passthrough` and `~/.config/vrisingvr-passthrough` on the headset.
 
 ## Known limitations
 
