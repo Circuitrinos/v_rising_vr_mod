@@ -17,9 +17,9 @@ namespace VRisingVR;
 /// The rectangle is fixed in the room (SteamVR's tracking space) and drawn from your real eye positions (not the
 /// game's scaled ones) with its own near plane, so it lines up with the passthrough whatever WorldScale or
 /// StereoStrength is set to. Its offsets are measured from an anchor: where your head was at the last recenter
-/// until you place the window (the F4 panel's button), then that pose, frozen until VR restarts, so taking the headset
-/// off and on (which recenters) doesn't move it off the keyboard. In the tabletop view the board lies in about
-/// the same direction as the desk, so by default the window only shows while you hold its key.
+/// until you move the window (MoveKey and the mouse), then that pose, frozen until VR restarts, so taking the
+/// headset off and on (which recenters) doesn't move it off the keyboard. In the tabletop view the board lies in
+/// about the same direction as the desk, so by default the window only shows while you hold a key.
 /// </summary>
 internal sealed class DeskWindow
 {
@@ -27,10 +27,8 @@ internal sealed class DeskWindow
     private const float FarClip = 10f;
     /// <summary>LookDown mode: once shown, the window stays until you look this many degrees back above LookDownAngle.</summary>
     private const float Hysteresis = 4f;
-    /// <summary>Placing the window only works while you face at least this far down (sine of about 9 degrees)...</summary>
-    private const float MinGazeDown = 0.15f;
-    /// <summary>...and the spot you face is at most this far away along the floor (meters), so a shallow head can't throw it across the room.</summary>
-    private const float MaxPlaceReach = 1f;
+    /// <summary>A cursor jump bigger than this (pixels per frame) is the game moving the cursor, not the mouse; it doesn't move the window.</summary>
+    private const int MaxCursorStep = 300;
     private const int MaxSamples = 4096;
 
     private Mesh _mesh;
@@ -42,11 +40,16 @@ internal sealed class DeskWindow
     /// <summary>Flipped by each press of the key: shown (Toggle mode), or turned off (LookDown and Always). Reset when the mode changes.</summary>
     private bool _latched;
     private DeskWindowMode _latchMode;
-    /// <summary>Set by placing the window: the pose its offsets are measured from, instead of the latest recenter.</summary>
+    /// <summary>Set by moving the window: the pose its offsets are measured from, instead of the latest recenter.</summary>
     private bool _anchored;
     private HmdMatrix34_t _anchor;
+    // Moving it: the offsets and turn so far and the cursor's last position. The settings are written once, when MoveKey is let go.
+    private bool _moving;
+    private float _moveForward, _moveRight, _moveYaw;
+    private int _cursorX, _cursorY;
     private bool _lookingDown;
     private bool _visible;
+    private bool _heldOpen;
     private bool _drawn;
     private bool _failed;
 
@@ -59,22 +62,28 @@ internal sealed class DeskWindow
     /// <summary>Whether the window is drawn this frame.</summary>
     public bool Visible => _visible;
 
-    /// <summary>The desk window key as it reads in messages.</summary>
+    /// <summary>Whether it shows because a key is held (a Hold-mode peek, or moving it), so you're looking at the desk.</summary>
+    public bool HeldOpen => _visible && _heldOpen;
+
+    /// <summary>The desk window keys as they read in messages.</summary>
     public static string KeyName => Hotkeys.DisplayName(Settings.DeskKey.Value);
+    public static string MoveKeyName => Hotkeys.DisplayName(Settings.DeskMoveKey.Value);
 
     public static string Describe() =>
-        $"Desk window: {Settings.DeskMode.Value} mode ({KeyName}; the F4 panel places it where you face), " +
+        $"Desk window: {Settings.DeskMode.Value} mode ({KeyName}; {MoveKeyName} and the mouse move it), " +
         $"{Settings.DeskColor.Value}, {Settings.DeskWidth.Value:0.00} x {Settings.DeskDepth.Value:0.00} m, " +
         $"{Settings.DeskForward.Value:0.00} m ahead, {Settings.DeskRight.Value:0.00} m right and {Settings.DeskBelowEyes.Value:0.00} m " +
-        "below the recentered eyes.";
+        $"below the recentered eyes, turned {Settings.DeskYaw.Value:0} degrees.";
 
     /// <summary>
     /// Decide whether the window shows this frame and lay it out. <paramref name="head"/> is the current head pose,
-    /// <paramref name="recenter"/> the head pose at the last recenter, both in tracking space.
+    /// <paramref name="recenter"/> the head pose at the last recenter, both in tracking space. While
+    /// <paramref name="moveHeld"/>, the window shows and follows the mouse.
     /// </summary>
-    public void Update(bool havePose, HmdMatrix34_t head, HmdMatrix34_t recenter, bool keyHeld, bool panelOpen, bool inWorld)
+    public void Update(bool havePose, HmdMatrix34_t head, HmdMatrix34_t recenter, bool keyHeld, bool moveHeld, bool panelOpen, bool inWorld)
     {
         _visible = false;
+        _heldOpen = false;
         if (_failed || !havePose)
             return;
         try
@@ -99,8 +108,10 @@ internal sealed class DeskWindow
                 DeskWindowMode.Always => !_latched,
                 _ => false,
             };
-            // While the settings panel is open, so its sliders can line the window up with the desk.
-            show |= panelOpen;
+            _heldOpen = moveHeld || (mode == DeskWindowMode.Hold && keyHeld);
+            // Also while moving it, and while the settings panel is open, so its sliders can line it up with the desk.
+            show |= moveHeld || panelOpen;
+            Move(moveHeld, recenter);
 
             if (inWorld)
                 Sample(show ? _pitchShown : _pitchHidden, pitch);
@@ -109,7 +120,9 @@ internal sealed class DeskWindow
 
             EnsureResources();
             UpdateColor();
-            UpdateCorners(_anchored ? _anchor : recenter);
+            UpdateCorners(_anchored ? _anchor : recenter,
+                _moving ? _moveForward : Settings.DeskForward.Value, _moving ? _moveRight : Settings.DeskRight.Value,
+                _moving ? _moveYaw : Settings.DeskYaw.Value);
             _visible = true;
         }
         catch (Exception e)
@@ -141,29 +154,63 @@ internal sealed class DeskWindow
     }
 
     /// <summary>
-    /// The F4 panel's place button: center the window where the line straight out of your face meets the desk (BelowEyes under
-    /// the anchor), and anchor it there for the rest of the VR session. It follows your head's direction, not your
-    /// eyes', so you have to face the spot. Its size, height and orientation stay. Returns a message to show.
+    /// While MoveKey is held, the mouse slides the window over the desk: right moves it right, forward (the cursor
+    /// going up) moves it away, MoveSpeed millimeters per pixel, in your view's directions whatever its turn. The
+    /// scroll wheel turns it about its center, RotateStep degrees per notch. Moving it anchors it for the rest of
+    /// the VR session. Letting go saves where it is (one settings write, not one per frame).
     /// </summary>
-    public string PlaceAtGaze(HmdMatrix34_t head, HmdMatrix34_t recenter)
+    private void Move(bool moveHeld, HmdMatrix34_t recenter)
     {
-        HmdMatrix34_t anchor = _anchored ? _anchor : recenter;
-        float gx = -head.m2, gy = -head.m6, gz = -head.m10;
-        float deskY = anchor.m7 - Settings.DeskBelowEyes.Value;
-        float t = gy < -MinGazeDown ? (deskY - head.m7) / gy : -1f;
-        if (t <= 0f || t * MathF.Sqrt(gx * gx + gz * gz) > MaxPlaceReach)
-            return "Face your keyboard and mouse when the countdown ends";
-
-        float dx = head.m3 + gx * t - anchor.m3;
-        float dz = head.m11 + gz * t - anchor.m11;
-        Heading(anchor, out float fx, out float fz);
-        // Right is (-fz, 0, fx): looking along -Z (OpenVR's forward), right is +X.
-        Settings.DeskForward.Value = dx * fx + dz * fz;
-        Settings.DeskRight.Value = -dx * fz + dz * fx;
-        _anchor = anchor;
-        _anchored = true;
-        return $"Desk window placed {Settings.DeskForward.Value:0.00} m ahead, {Settings.DeskRight.Value:0.00} m right";
+        if (!moveHeld)
+        {
+            if (_moving)
+            {
+                _moving = false;
+                Settings.DeskForward.Value = _moveForward;
+                Settings.DeskRight.Value = _moveRight;
+                Settings.DeskYaw.Value = _moveYaw;
+                Plugin.Logger.LogInfo($"Desk window moved to {Settings.DeskForward.Value:0.00} m ahead, {Settings.DeskRight.Value:0.00} m right, " +
+                                      $"turned {Settings.DeskYaw.Value:0} degrees.");
+            }
+            return;
+        }
+        if (!Hotkeys.TryGetCursor(out int x, out int y))
+            return;
+        if (!_moving)
+        {
+            if (!_anchored)
+            {
+                _anchor = recenter;
+                _anchored = true;
+            }
+            _moveForward = Settings.DeskForward.Value;
+            _moveRight = Settings.DeskRight.Value;
+            _moveYaw = Settings.DeskYaw.Value;
+            _cursorX = x;
+            _cursorY = y;
+            _moving = true;
+        }
+        int dx = x - _cursorX, dy = y - _cursorY;
+        _cursorX = x;
+        _cursorY = y;
+        if (Math.Abs(dx) <= MaxCursorStep && Math.Abs(dy) <= MaxCursorStep)
+        {
+            float metersPerPixel = Settings.DeskMoveSpeed.Value / 1000f;
+            _moveRight = Clamp(Settings.DeskRight, _moveRight + dx * metersPerPixel);
+            _moveForward = Clamp(Settings.DeskForward, _moveForward - dy * metersPerPixel);
+        }
+        float notches = Hotkeys.WheelNotches();
+        if (notches != 0f)
+        {
+            // Wrapped rather than clamped, so it keeps turning past half a turn.
+            float yaw = _moveYaw + notches * Settings.DeskRotateStep.Value;
+            _moveYaw = yaw - 360f * MathF.Floor((yaw + 180f) / 360f);
+        }
     }
+
+    /// <summary>A value kept inside the setting's own range.</summary>
+    private static float Clamp(BepInEx.Configuration.ConfigEntry<float> entry, float value) =>
+        entry.Description.AcceptableValues is { } range ? (float)range.Clamp(value) : value;
 
     /// <summary>The room's tracking space changed (SteamVR reset it), so a placed window's anchor no longer means anything.</summary>
     public void ForgetPlacement() => _anchored = false;
@@ -231,7 +278,7 @@ internal sealed class DeskWindow
     /// <summary>For F5's _info.txt: the window's state and, if it has been laid out, its corners in tracking space.</summary>
     public string CaptureInfo()
     {
-        string info = $"desk window: visible {_visible}, anchored {_anchored} (placed from the F4 panel), failed {_failed}. {Describe()}";
+        string info = $"desk window: visible {_visible}, anchored {_anchored} (moved with MoveKey), moving {_moving}, failed {_failed}. {Describe()}";
         if (_vertices != null)
         {
             Span<Vector3> v = _vertices.AsSpan();
@@ -274,6 +321,7 @@ internal sealed class DeskWindow
         _latched = false;
         _anchored = false;
         _failed = false;
+        _moving = false; // a move cut off by stopping VR isn't saved
         _lookingDown = false;
         _visible = false;
         _drawn = false;
@@ -310,15 +358,26 @@ internal sealed class DeskWindow
         }
     }
 
-    /// <summary>Lay the rectangle flat at desk height, square to the recentered heading, in tracking space (meters).</summary>
-    private void UpdateCorners(HmdMatrix34_t recenter)
+    /// <summary>
+    /// Lay the rectangle flat at desk height, <paramref name="forward"/> ahead of and <paramref name="right"/> right
+    /// of the anchor along its heading, turned <paramref name="yawDegrees"/> clockwise (seen from above) about its
+    /// center, in tracking space (meters).
+    /// </summary>
+    private void UpdateCorners(HmdMatrix34_t anchor, float forward, float right, float yawDegrees)
     {
-        Heading(recenter, out float fx, out float fz);
+        Heading(anchor, out float fx, out float fz);
+        // Right is (-fz, 0, fx): looking along -Z (OpenVR's forward), right is +X.
         float rx = -fz, rz = fx;
-        float forward = Settings.DeskForward.Value, right = Settings.DeskRight.Value;
-        float cx = recenter.m3 + fx * forward + rx * right;
-        float cy = recenter.m7 - Settings.DeskBelowEyes.Value;
-        float cz = recenter.m11 + fz * forward + rz * right;
+        float cx = anchor.m3 + fx * forward + rx * right;
+        float cy = anchor.m7 - Settings.DeskBelowEyes.Value;
+        float cz = anchor.m11 + fz * forward + rz * right;
+        // The rectangle's own axes: the heading turned clockwise, so its forward edge swings toward the right.
+        float yaw = yawDegrees * Mathf.Deg2Rad, cos = MathF.Cos(yaw), sin = MathF.Sin(yaw);
+        float tfx = fx * cos + rx * sin, tfz = fz * cos + rz * sin;
+        fx = tfx;
+        fz = tfz;
+        rx = -fz;
+        rz = fx;
         float hw = 0.5f * Settings.DeskWidth.Value, hd = 0.5f * Settings.DeskDepth.Value;
 
         Span<Vector3> v = _vertices.AsSpan();

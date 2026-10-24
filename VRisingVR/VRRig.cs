@@ -66,6 +66,7 @@ public class VRRig : MonoBehaviour
     // The key-coloured window onto your desk, drawn into the eye images last (after the bars and the cursor).
     private readonly DeskWindow _desk = new();
     private bool _deskKeyHeld;
+    private bool _deskMoveHeld;
     // The health bars and the ground cursor, drawn into the eye images after they render (DrawEyeOverlays).
     private bool _barsWanted;
     private bool _reticleWanted;
@@ -368,15 +369,6 @@ public class VRRig : MonoBehaviour
             _settingsPanel.Toggle();
         _settingsPanel.Tick();
         _toast.Tick();
-        // The panel's "place where you face" countdown ended: the desk window goes where the head points now.
-        if (_settingsPanel.TakePlaceRequest())
-        {
-            string placed = _state == State.Running && _haveRecenterPose
-                ? _desk.PlaceAtGaze(_renderedPose, _recenterPose)
-                : $"Start VR ({Settings.ToggleKey.Value}) before placing the desk window";
-            Plugin.Logger.LogInfo(placed);
-            _settingsPanel.ShowPlaceResult(placed);
-        }
 
         // Poll every key each frame so edge detection stays current.
         bool toggle = Hotkeys.Pressed(Settings.ToggleKey.Value);
@@ -388,6 +380,7 @@ public class VRRig : MonoBehaviour
         bool capture = Hotkeys.Pressed(Settings.CaptureKey.Value);
         bool deskKey = Hotkeys.Pressed(Settings.DeskKey.Value);
         _deskKeyHeld = Hotkeys.IsDown(Settings.DeskKey.Value);
+        _deskMoveHeld = Hotkeys.IsDown(Settings.DeskMoveKey.Value);
 
         if (toggle)
         {
@@ -484,7 +477,7 @@ public class VRRig : MonoBehaviour
         // this frame returns early (no pose) and they're only submitted later.
         if (_desk.TakeDrawn())
             _eyesCleared = false;
-        _desk.Update(havePose && _haveRecenterPose, _renderedPose, _recenterPose, _deskKeyHeld, _settingsPanel.Visible, inWorld);
+        _desk.Update(havePose && _haveRecenterPose, _renderedPose, _recenterPose, _deskKeyHeld, _deskMoveHeld, _settingsPanel.Visible, inWorld);
 
         if (SubmitBridge.TakePendingError() is { } renderThreadError)
             Plugin.Logger.LogError(renderThreadError);
@@ -495,9 +488,9 @@ public class VRRig : MonoBehaviour
         _screen.Tick(screenWanted, follow: !inWorld, havePose, _renderedPose);
         // In the world, the UI-only layer is the normal way to see the HUD and menus; the full mirror
         // (F7) replaces it rather than stacking on top of it.
-        // While you hold the key to peek at your desk, the HUD would cover the window, so it steps aside (not while
+        // While you hold a key to peek at your desk or move the window, the HUD would cover it, so it steps aside (not while
         // the settings panel is open: the panel is on the HUD).
-        bool deskPeek = _desk.Visible && Settings.DeskMode.Value == DeskWindowMode.Hold && !_settingsPanel.Visible;
+        bool deskPeek = _desk.HeldOpen && !_settingsPanel.Visible;
         HudAnchor anchor = inWorld ? ComputeHudAnchor(game) : default;
         _hud.Tick(inWorld && Settings.HudEnabled.Value && !screenWanted && !deskPeek, anchor);
         _desk.NoteBoard(anchor);

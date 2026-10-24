@@ -104,6 +104,10 @@ internal static class Settings
     public static ConfigEntry<float> DeskWidth;
     public static ConfigEntry<float> DeskDepth;
     public static ConfigEntry<string> DeskKey;
+    public static ConfigEntry<string> DeskMoveKey;
+    public static ConfigEntry<float> DeskMoveSpeed;
+    public static ConfigEntry<float> DeskYaw;
+    public static ConfigEntry<float> DeskRotateStep;
 
     public static ConfigEntry<Key> ToggleKey;
     public static ConfigEntry<Key> ScreenToggleKey;
@@ -226,7 +230,7 @@ internal static class Settings
             new AcceptableValueRange<float>(10f, 85f)));
         DeskForward = cfg.Bind("DeskWindow", "Forward", 0.45f, new ConfigDescription(
             "How far ahead of your eyes (where they were at the last recenter) the window's center is, in meters. " +
-            "The F4 panel's place button sets this and Right to where you're facing.",
+            "Moving the window with MoveKey and the mouse sets this and Right.",
             new AcceptableValueRange<float>(0.1f, 1.5f)));
         DeskRight = cfg.Bind("DeskWindow", "Right", 0f, new ConfigDescription(
             "How far right of your eyes the window's center is, in meters (negative = left).",
@@ -240,13 +244,26 @@ internal static class Settings
         DeskDepth = cfg.Bind("DeskWindow", "Depth", 0.35f, new ConfigDescription(
             "Depth of the window in meters, front to back.", new AcceptableValueRange<float>(0.1f, 1f)));
         // Names rather than a Key, so they can also be mouse buttons. Changed in the F4 panel too: click its row, press the key.
-        DeskKey = cfg.Bind("DeskWindow", "Key", "MouseBack, G",
-            "The desk window key: hold it to see your desk (Hold mode), or press it to turn the window on and off (the other " +
-            "modes). One or more, separated by commas: key names (G, V, H, " +
-            "F3, CapsLock, Digit5, Numpad0, Semicolon, ...) or mouse buttons (MouseBack and MouseForward are the side buttons, " +
-            "MouseMiddle the wheel). The rear side button is easiest to hold while you move, but V Rising also uses it by " +
-            "default, as the second binding of Interrupt Ability Cast (its Mouse 3): clear that in the game's controls. " +
-            "G is a keyboard key V Rising doesn't use.");
+        const string bindingNames =
+            "One or more, separated by commas: key names (G, V, H, F3, CapsLock, Digit5, Numpad0, Semicolon, ...) or mouse " +
+            "buttons (MouseBack and MouseForward are the side buttons, MouseMiddle the wheel).";
+        DeskKey = cfg.Bind("DeskWindow", "Key", "MouseBack",
+            "Hold it to see your desk (Hold mode), or press it to turn the window on and off (the other modes). " + bindingNames +
+            " The rear side button is easiest to hold while you move, but V Rising also uses it by default, as the second " +
+            "binding of Interrupt Ability Cast (its Mouse 3): clear that in the game's controls.");
+        DeskMoveKey = cfg.Bind("DeskWindow", "MoveKey", "G",
+            "Hold it to see your desk and move the window with the mouse (right and left, forward and back) and turn it with " +
+            "the scroll wheel; it stays where you let go. " + bindingNames + " G is a key V Rising doesn't use. The game also " +
+            "zooms with the wheel meanwhile.");
+        DeskMoveSpeed = cfg.Bind("DeskWindow", "MoveSpeed", 0.3f, new ConfigDescription(
+            "How far the window moves per pixel the mouse cursor moves while you hold MoveKey, in millimeters.",
+            new AcceptableValueRange<float>(0.05f, 2f)));
+        DeskYaw = cfg.Bind("DeskWindow", "Yaw", 0f, new ConfigDescription(
+            "How far the window is turned on the desk, clockwise seen from above, in degrees. The scroll wheel sets it while " +
+            "you hold MoveKey.", new AcceptableValueRange<float>(-180f, 180f)));
+        DeskRotateStep = cfg.Bind("DeskWindow", "RotateStep", 5f, new ConfigDescription(
+            "Degrees the window turns per scroll wheel notch while you hold MoveKey (scrolling away from you turns it " +
+            "clockwise). Negative turns it the other way.", new AcceptableValueRange<float>(-45f, 45f)));
 
         ToggleKey = cfg.Bind("Keys", "ToggleVR", Key.F8, "Start/stop VR.");
         IsolationKey = cfg.Bind("Keys", "CycleEyeIsolation", Key.F6,

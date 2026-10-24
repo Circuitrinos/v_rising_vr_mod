@@ -15,6 +15,15 @@ internal static class Hotkeys
     [DllImport("user32.dll")]
     private static extern short GetAsyncKeyState(int vKey);
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Point
+    {
+        public int X, Y;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out Point point);
+
     private const int VkEscape = 0x1B;
 
     private static readonly Dictionary<int, bool> s_wasDown = new();
@@ -29,9 +38,8 @@ internal static class Hotkeys
     /// <summary>Everything a binding can name, for capturing one: keys by their InputSystem name, then mouse buttons.</summary>
     private static (string Name, int Vk)[] s_bindable;
     private static readonly Dictionary<int, bool> s_captureDown = new();
-    // The last binding parsed, since the desk window's is looked up twice a frame.
-    private static string s_parsedBinding;
-    private static int[] s_parsedVks = Array.Empty<int>();
+    // Bindings already parsed, since the desk window's keys are looked up every frame.
+    private static readonly Dictionary<string, int[]> s_parsed = new();
     private static readonly char[] Separators = { ',', ' ' };
 
     /// <summary>
@@ -79,13 +87,55 @@ internal static class Hotkeys
     /// <summary>True on the frame Escape goes down (cancels capturing a binding).</summary>
     public static bool EscapePressed() => Edge(VkEscape);
 
+    /// <summary>The mouse cursor's position on the desktop in pixels (y grows downward), while the game window has focus.</summary>
+    public static bool TryGetCursor(out int x, out int y)
+    {
+        x = y = 0;
+        if (!Application.isFocused || !GetCursorPos(out Point point))
+            return false;
+        x = point.X;
+        y = point.Y;
+        return true;
+    }
+
+    private static bool s_wheelFailed;
+
+    /// <summary>
+    /// Scroll wheel notches this frame (positive = scrolled away from you), from the InputSystem: Win32 has no way to
+    /// poll the wheel. The game sees the same scroll.
+    /// </summary>
+    public static float WheelNotches()
+    {
+        if (s_wheelFailed || !Application.isFocused)
+            return 0f;
+        try
+        {
+            Mouse mouse = Mouse.current;
+            if (mouse == null)
+                return 0f;
+            float y = mouse.scroll.ReadValue().y;
+            // Windows reports 120 per notch; newer InputSystem versions normalize that to 1.
+            return MathF.Abs(y) >= 30f ? y / 120f : y;
+        }
+        catch (Exception e)
+        {
+            s_wheelFailed = true;
+            Plugin.Logger.LogWarning($"Can't read the mouse wheel ({e.Message}); the desk window can't be turned with it.");
+            return 0f;
+        }
+    }
+
+    /// <summary>Whether the binding (one or more names) includes the key or button with this virtual-key code.</summary>
+    public static bool Uses(string binding, int vk) => vk != 0 && Array.IndexOf(ParseBinding(binding), vk) >= 0;
+
     /// <summary>The virtual-key codes a binding names; names that aren't supported are skipped with a warning.</summary>
     private static int[] ParseBinding(string binding)
     {
-        if (ReferenceEquals(binding, s_parsedBinding))
-            return s_parsedVks;
+        binding ??= "";
+        if (s_parsed.TryGetValue(binding, out int[] parsed))
+            return parsed;
         var vks = new List<int>();
-        foreach (string name in (binding ?? "").Split(Separators, StringSplitOptions.RemoveEmptyEntries))
+        foreach (string name in binding.Split(Separators, StringSplitOptions.RemoveEmptyEntries))
         {
             int vk = ToVirtualKey(name);
             if (vk == 0)
@@ -93,9 +143,7 @@ internal static class Hotkeys
             else if (!vks.Contains(vk))
                 vks.Add(vk);
         }
-        s_parsedVks = vks.ToArray();
-        s_parsedBinding = binding;
-        return s_parsedVks;
+        return s_parsed[binding] = vks.ToArray();
     }
 
     /// <summary>The virtual-key code of one binding name, or 0 if it names nothing supported.</summary>

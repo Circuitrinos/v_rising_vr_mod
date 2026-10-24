@@ -223,7 +223,7 @@ The user asked to see their keyboard and mouse while playing. It ships as a **se
 - **Mod side (`DeskWindow`):**
   - A flat quad lying on the desk, in OpenVR tracking space (standing universe, meters). Its offsets are measured from an anchor: `Forward`/`Right` along the anchor's heading, `BelowEyes` under its height, `Width`×`Depth`.
     - Until placed, the anchor is `_recenterPose`, so the window follows F9 and the headset-on recenter.
-    - Placing it (the F4 panel's place button) freezes the anchor for the VR session, so proximity recenters (headset off and on) no longer move it off the keyboard (review finding). `ForgetPlacement` on `StandingZeroPoseReset` / `ChaperoneUniverseHasChanged`, and `Destroy` on StopVR, return it to following.
+    - Moving it (MoveKey) freezes the anchor for the VR session, so proximity recenters (headset off and on) no longer move it off the keyboard (review finding). `ForgetPlacement` on `StandingZeroPoseReset` / `ChaperoneUniverseHasChanged`, and `Destroy` on StopVR, return it to following.
     - Only the offsets are saved: whether the Frame's standing origin survives SteamVR restarts is unknown.
   - It is drawn last into both eye RTs: after `DrawEyeOverlays` in `endCameraRendering`, or at the end of the frame, including into the menus' black frames, which are then cleared every frame after a draw.
   - Each eye's view is `VRMath.TrackingView(_submitPose, eyeToHead)` (true IPD, not StereoStrength or WorldScale). The projection is its own (near 0.02 m), so it lines up with the real desk.
@@ -233,16 +233,18 @@ The user asked to see their keyboard and mouse while playing. It ships as a **se
     - Modes: Hold, Toggle, LookDown (4-degree hysteresis), Always, Off.
     - The window also shows while the F4 panel is open, for lining it up. The panel has a CanvasScaler (1920x1080 reference, match height), since its 17 rows are 1028 px tall.
     - While a Hold peek shows the window, the HUD layer is hidden (`HudLayer.Tick(false)` only hides the overlay and pauses its camera). Otherwise the HUD, aimed at the feet, would cover the window; whether PC overlays are composited before the stream is encoded is unverified.
-    - **Placing it** is a button in the F4 panel. After a 3 s countdown (`VrSettingsPanel.TakePlaceRequest`, polled by VRRig.Update), the window is centred where the head's forward ray (not the eyes') meets the desk plane. Spots more than 1 m away along the floor are rejected.
-      - There is no key combination: every keyboard modifier is bound in V Rising. Holding Left Ctrl selects a transformation (the user, 2026-10-23), Shift is the vampire-power modifier and Alt the emote wheel. Ctrl+key was removed.
-  - **The desk key is `MouseBack, G`.** F3 was awkward with WASD (user, 2026-10-23); G came next, then the side button won in testing.
+    - **Moving it** (the user's idea, 2026-10-23): holding `DeskWindow.MoveKey` (G) shows the window, and the mouse slides it on the desk plane. The cursor delta comes from Win32 `GetCursorPos`, `MoveSpeed` mm per pixel (0.3); right is right, cursor up is away. Steps over 300 px are taken as the game warping the cursor and ignored. The settings are written once, on release. The game's aim moves with the mouse meanwhile.
+      - The scroll wheel turns it about its centre while G is held: `RotateStep` degrees per notch (5), saved as `Yaw`, clockwise seen from above, wrapped at +-180. It's read from the InputSystem (`Mouse.current.scroll.ReadValue()`; 120 per notch on Windows, normalised when under 30), since Win32 can't poll the wheel. A failure is caught, logged once, and only rotation turns off.
+      - The game zooms its camera with the same wheel. The user doesn't mind (2026-10-23: 'the camera zoom can easily be put back'), so the zoom isn't suppressed. If that changes: `ControlsSettings.CameraZoomSensitivity` (ProjectM.Shared) and `TopdownCameraSystem._CameraInputs` (with a `ScrollDelta` field) exist.
+      - It replaced two earlier ways to place the window. Ctrl+key: every keyboard modifier is bound in V Rising (holding Left Ctrl selects a transformation, the user, 2026-10-23; Shift is the vampire-power modifier, Alt the emote wheel). Then an F4 'place where you face' countdown, which aimed with the head's forward ray, not the eyes. Both are gone.
+  - **The desk keys: `Key` = MouseBack (show), `MoveKey` = G (show and move).** F3 was awkward with WASD (user, 2026-10-23); G came next, then the side button won in testing, and G became the move key.
     - It is `[DeskWindow] Key`, a string, so it can name mouse buttons. The F3 the first test saved stays behind as an orphaned `[Keys] DeskWindow`.
     - `Hotkeys` parses a binding:
       - InputSystem `Key` names, plus CapsLock and the US-position punctuation keys;
       - a lone digit;
       - `MouseMiddle` / `MouseBack` / `MouseForward` (VK 4/5/6).
-    - The F4 panel's top row is a Button: `onClick.AddListener((UnityAction)StartCapture)` compiles through C# 10's natural method-group type plus Il2CppInterop's implicit `Action` to `UnityAction` conversion. It is wrapped in try/catch, so a failure only disables the row.
-    - Capture takes the next newly pressed bindable input, Esc cancels, and the mod's own hotkeys are rejected.
+    - The F4 panel's top two rows are Buttons (`KeyRow`, one per key): `onClick.AddListener((UnityAction)StartCapture)` compiles through C# 10's natural method-group type plus Il2CppInterop's implicit `Action` to `UnityAction` conversion. It is wrapped in try/catch, so a failure only disables the row.
+    - Capture takes the next newly pressed bindable input, Esc cancels, and the mod's own hotkeys and the other desk key are rejected.
   - **V Rising's default bindings** (web guides 2022-2024 plus a Steam post of 2023-06; check in game for 1.1):
     - movement and skills: WASD, Q E R C T, F interact, Space travel or drop, Shift cliff jump and power modifier;
     - X (or Z) interrupt cast, Left Ctrl action wheel, Left Alt emote wheel, 1-8 action bar and powers;
@@ -272,8 +274,8 @@ The user asked to see their keyboard and mouse while playing. It ships as a **se
   - The F5 capture at 17:52 was taken on a loading screen: the eye images were black apart from the window (shown because the F4 panel was open). Expected.
   - **Performance:** 23-28 fps (GPU 34-42 ms) at 2404² per eye, lower than the 31-37 fps of 2026-10-20. The GPU was idle afterwards, with no other heavy program. Likely the scene, or Overwolf's overlay now that the game starts from TMM. Not investigated.
 - **User verdict after the second test:** no false keying at 0.12/0.06, and the alignment is fine with the default placement.
-- **Still to check on hardware:**
-  - the F4 place button's countdown placement (F5 captures include the window; `_info.txt` lists its state and corners);
+- **Third test (2026-10-23 ~20:27):** moving with G and turning with the wheel 'works well' (the user). The InputSystem wheel read works, with no warning. The user ended at 0.36 m ahead, 0.16 m right, turned 10 degrees (mouse to the right of the keyboard). The defaults stay generic.
+- **Ready for release:** every desk window feature has been checked on hardware.
 - **Camera routes that failed (2026-10-23; details in commit 4d14b11):**
   - `/dev/video99` is SteamVR's `v4l2cam` mirror of the `system.HeadsetView` overlay (what the headset displays), not a camera.
   - `IVRTrackedCamera_006` reports a camera but `GetCameraFrameSize` fails.

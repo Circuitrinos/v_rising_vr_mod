@@ -34,35 +34,21 @@ internal sealed class VrSettingsPanel
     private bool _failed;
     private float _saveAt = -1f;
     private bool _saveHooked;
-    // The desk window key's row: a button that, once clicked, takes the next key or mouse button pressed.
-    private Text _keyText;
-    private bool _capturing;
-    private string _keyMessage;
-    private float _keyMessageUntil;
-    // The place row: a button that, after a countdown to face the keyboard, asks the rig to place the desk window.
-    private const float PlaceCountdown = 3f;
-    private Text _placeText;
-    private float _placeAt = -1f;
-    private bool _placeRequested;
-    private string _placeMessage;
-    private float _placeMessageUntil;
+    /// <summary>A desk window key's row: a button that, once clicked, takes the next key or mouse button pressed.</summary>
+    private sealed class KeyRow
+    {
+        public ConfigEntry<string> Entry;
+        public string Label;
+        public string ShortName; // in clash messages: "show key"
+        public Text Text;
+        public string Message;
+        public float MessageUntil;
+    }
+
+    private readonly List<KeyRow> _keyRows = new();
+    private KeyRow _capturing; // the row waiting for its new key, if any
 
     public bool Visible => _visible;
-
-    /// <summary>True once when the place countdown has ended; the caller places the window and reports with <see cref="ShowPlaceResult"/>.</summary>
-    public bool TakePlaceRequest()
-    {
-        bool requested = _placeRequested;
-        _placeRequested = false;
-        return requested;
-    }
-
-    /// <summary>Show how placing the desk window went, on its row.</summary>
-    public void ShowPlaceResult(string message)
-    {
-        _placeMessage = message;
-        _placeMessageUntil = Time.unscaledTime + 5f;
-    }
 
     public void Toggle()
     {
@@ -103,8 +89,7 @@ internal sealed class VrSettingsPanel
                 if (row.Text != null)
                     row.Text.text = $"{row.Label}: {row.Entry.Value.ToString(row.Format)}";
             }
-            TickKeyRow();
-            TickPlaceRow();
+            TickKeyRows();
 
             // Edits are saved shortly after they stop, so nothing is lost if the game exits with the panel open.
             if (_saveAt >= 0f && Time.unscaledTime >= _saveAt)
@@ -145,8 +130,7 @@ internal sealed class VrSettingsPanel
         if (_root != null)
             _root.SetActive(false);
         _visible = false;
-        _capturing = false;
-        _placeAt = -1f;
+        _capturing = null;
         _saveAt = -1f;
         Settings.File.Save();
         Settings.File.SaveOnConfigSet = true;
@@ -218,6 +202,7 @@ internal sealed class VrSettingsPanel
             (Settings.DeskBelowEyes, "Desk below your eyes (m)", 0.1f, 1.2f, "0.00"),
             (Settings.DeskWidth, "Desk window width (m)", 0.2f, 2f, "0.00"),
             (Settings.DeskDepth, "Desk window depth (m)", 0.1f, 1f, "0.00"),
+            (Settings.DeskYaw, "Desk window turn (degrees)", -180f, 180f, "0"),
             (Settings.DeskLookDownAngle, "Desk look-down (degrees)", 10f, 85f, "0"),
         };
 
@@ -235,13 +220,8 @@ internal sealed class VrSettingsPanel
         CreateText(panel, $"VR settings  ({Settings.SettingsKey.Value} closes)", new Vector2(0f, height / 2f - 40f),
             new Vector2(width - 40f, 44f), 26);
         float firstRowY = height / 2f - 90f - rowHeight / 2f;
-        if (!CreateButtonRow(panel, firstRowY, width - 40f, rowHeight - 12f, StartCapture, out _keyText))
-        {
-            ShowKeyMessage("Change the desk window key in the config file (DeskWindow.Key)");
-            _keyMessageUntil = float.MaxValue;
-        }
-        if (!CreateButtonRow(panel, firstRowY - rowHeight, width - 40f, rowHeight - 12f, StartPlaceCountdown, out _placeText))
-            ShowPlaceResult("Line the desk window up with the sliders below");
+        AddKeyRow(panel, firstRowY, width - 40f, rowHeight - 12f, Settings.DeskKey, "Show the desk window", "show key");
+        AddKeyRow(panel, firstRowY - rowHeight, width - 40f, rowHeight - 12f, Settings.DeskMoveKey, "Show and move it with the mouse", "move key");
 
         for (int i = 0; i < rows.Count; i++)
         {
@@ -295,74 +275,72 @@ internal sealed class VrSettingsPanel
         }
     }
 
-    private void StartPlaceCountdown() => _placeAt = Time.unscaledTime + PlaceCountdown;
-
-    private void TickPlaceRow()
+    private void AddKeyRow(RectTransform panel, float y, float width, float height, ConfigEntry<string> entry, string label, string shortName)
     {
-        if (_placeText == null)
-            return;
-        if (_placeAt >= 0f)
+        var row = new KeyRow { Entry = entry, Label = label, ShortName = shortName };
+        if (!CreateButtonRow(panel, y, width, height, () => StartCapture(row), out row.Text))
         {
-            float left = _placeAt - Time.unscaledTime;
-            if (left > 0f)
-            {
-                _placeText.text = $"Point your face at your keyboard and mouse...  {Mathf.CeilToInt(left)}";
-                return;
-            }
-            _placeAt = -1f;
-            _placeRequested = true;
+            row.Message = $"{label}: change it in the config file (DeskWindow.{entry.Definition.Key})";
+            row.MessageUntil = float.MaxValue;
         }
-        _placeText.text = Time.unscaledTime < _placeMessageUntil ? _placeMessage
-            : "Place the desk window where you face   (click, then look down)";
+        _keyRows.Add(row);
     }
 
-    private void StartCapture()
+    private void StartCapture(KeyRow row)
     {
         Hotkeys.BeginCapture();
-        _capturing = true;
+        _capturing = row;
     }
 
-    private void TickKeyRow()
+    private void TickKeyRows()
     {
-        if (_keyText == null)
-            return;
-        if (_capturing)
+        if (_capturing != null)
         {
             if (Hotkeys.EscapePressed())
-                _capturing = false;
+                _capturing = null;
             else if (Hotkeys.CapturePress() is string binding)
-                SetDeskKey(binding);
+                SetKey(_capturing, binding);
         }
-        _keyText.text = _capturing ? "Press the new key or mouse button   (Esc cancels)"
-            : Time.unscaledTime < _keyMessageUntil ? _keyMessage
-            : $"Desk window key: {DeskWindow.KeyName}   (click to change)";
+        foreach (KeyRow row in _keyRows)
+        {
+            if (row.Text == null)
+                continue;
+            row.Text.text = row == _capturing ? "Press the new key or mouse button   (Esc cancels)"
+                : Time.unscaledTime < row.MessageUntil ? row.Message
+                : $"{row.Label}: {Hotkeys.DisplayName(row.Entry.Value)}   (click to change)";
+        }
     }
 
-    private void SetDeskKey(string binding)
+    private void SetKey(KeyRow row, string binding)
     {
-        _capturing = false;
+        _capturing = null;
         string name = Hotkeys.DisplayName(binding);
-        string clash = ModKeyUsing(binding);
+        string clash = KeyUsing(row, binding);
         if (clash != null)
         {
-            ShowKeyMessage($"{name} is already the mod's {clash} key. Click to try another.");
+            ShowMessage(row, $"{name} is already the {clash}. Click to try another.");
             return;
         }
-        Settings.DeskKey.Value = binding;
-        ShowKeyMessage($"Desk window key: {name}. Check the game doesn't use it.");
-        Plugin.Logger.LogInfo($"Desk window key set to {binding}.");
+        row.Entry.Value = binding;
+        ShowMessage(row, $"Set to {name}. Check the game doesn't use it.");
+        Plugin.Logger.LogInfo($"DeskWindow.{row.Entry.Definition.Key} set to {binding}.");
     }
 
-    private void ShowKeyMessage(string message)
+    private static void ShowMessage(KeyRow row, string message)
     {
-        _keyMessage = message;
-        _keyMessageUntil = Time.unscaledTime + 4f;
+        row.Message = message;
+        row.MessageUntil = Time.unscaledTime + 4f;
     }
 
-    /// <summary>Which of the mod's own hotkeys the binding would collide with, or null.</summary>
-    private static string ModKeyUsing(string binding)
+    /// <summary>Which of the mod's hotkeys, or the other desk window key, the binding would collide with, or null.</summary>
+    private string KeyUsing(KeyRow row, string binding)
     {
         int vk = Hotkeys.ToVirtualKey(binding);
+        foreach (KeyRow other in _keyRows)
+        {
+            if (other != row && Hotkeys.Uses(other.Entry.Value, vk))
+                return other.ShortName;
+        }
         foreach ((ConfigEntry<Key> entry, string what) in new[]
                  {
                      (Settings.SettingsKey, "settings panel"), (Settings.ToggleKey, "VR on/off"), (Settings.RecenterKey, "recenter"),
@@ -371,7 +349,7 @@ internal sealed class VrSettingsPanel
                  })
         {
             if (Hotkeys.ToVirtualKey(entry.Value) == vk)
-                return what;
+                return $"mod's {what} key";
         }
         return null;
     }

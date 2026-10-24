@@ -1,10 +1,10 @@
 # VRisingVR Passthrough
 
-Play V Rising in VR like a 3D board game, and see your real keyboard and mouse whenever you need them. This is the passthrough edition of [VRisingVR](https://thunderstore.io/c/v-rising/p/Circuitrinos/VRisingVR/) for the **Steam Frame**: the same mod, plus a window onto your desk. Hold your mouse's rear side button (or **G**) and a window opens in the game where your keyboard and mouse are, showing them and your hands through the headset's passthrough. It needs a community tool on the headset (see "Seeing your desk"). Without a Steam Frame, or if you play with a gamepad, install VRisingVR instead.
+Play V Rising in VR like a 3D board game, and see your real keyboard and mouse whenever you need them. This is the passthrough edition of [VRisingVR](https://thunderstore.io/c/v-rising/p/Circuitrinos/VRisingVR/) for the **Steam Frame**: the same mod, plus a window onto your desk. Hold your mouse's rear side button and a window opens in the game where your keyboard and mouse are, showing them and your hands through the headset's passthrough. It needs a community tool on the headset (see "Seeing your desk"). Without a Steam Frame, or if you play with a gamepad, install VRisingVR instead.
 
 The game's own top-down camera is shown in stereo 3D in your headset, so the world sits in front of you like a living tabletop. You can lean in and look around it with your head, and the game's camera rotation and zoom still work. You keep playing with mouse and keyboard as usual.
 
-- Hold your mouse's rear side button (or G) to see your desk through a window in the game (Steam Frame).
+- Hold your mouse's rear side button to see your desk through a window in the game (Steam Frame). Hold G to move and turn the window with the mouse.
 - The game's HUD, menus and map float in front of you as a transparent layer.
 - Health bars, names and levels hang over the characters in 3D.
 - The aim cursor lies on the ground in 3D, exactly where your attacks go.
@@ -89,7 +89,8 @@ Hotkeys only work while the game window has focus. Most of them confirm with a s
 
 | Key | Action |
 | --- | --- |
-| Rear mouse side button, or G | Hold to see your desk (see "Seeing your desk"). The F4 panel changes the key and places the window. |
+| Rear mouse side button | Hold to see your desk (see "Seeing your desk"). |
+| G | Hold to see your desk: moving the mouse slides the window, the scroll wheel turns it. |
 | F4 | Open/close the VR settings panel: HUD distance, width, tilt and ground margin, cursor and health bar size, world scale, near clip, stereo strength, view height, menu screen distance, and the desk window's key, position and size |
 | F7 | Show/hide the virtual screen while in the world |
 | F8 | Stop/start VR |
@@ -146,26 +147,28 @@ SteamVR doesn't let PC games use the Steam Frame's cameras. Instead, the mod dra
 
 You don't need the tool's PC programs. After a SteamOS update on the headset, turn keying off in the panel and run the `mrkey.sh` line again; if it reports "unexpected shader layout", leave keying off until the tool is updated. To remove the tool, run `./uninstall.sh` in `~/mr-chroma` while SteamVR is running.
 
-**Using it.** Hold your mouse's rear side button, or **G**, and look at your desk. The HUD steps aside while you hold it. The window lies flat on the desk, at first 45 cm in front of and below where your eyes were when you last re-centered (F9, and whenever you put the headset on). To line it up with your keyboard and mouse, open the **F4** panel; the window stays visible while it's open.
+**Using it.** Hold your mouse's rear side button and look at your desk. The HUD steps aside while you hold it. The window lies flat on the desk, at first 45 cm in front of and below where your eyes were when you last re-centered (F9, and whenever you put the headset on). To line it up with your keyboard and mouse:
 
-- Click **Place the desk window where you face**, then point your face, not just your eyes, at the middle of your keyboard and mouse. After 3 seconds the window moves there. From then on it stays put when you re-center or take the headset off, until VR restarts.
-- Or adjust **Desk window ahead** and **right**, **Desk below your eyes** (your desk's height under your eyes), and the window's **width** and **depth**. The panel covers the middle of the window in the world; in the main menu it's out of the way.
+- Hold **G** and move the mouse. The window slides across the desk, right and left, forward and back. Scroll the wheel to turn it. It stays where you let go of G, and from then on it stays put when you re-center or take the headset off, until VR restarts. The game still gets the mouse meanwhile: your aim follows it (so don't click), and the wheel also zooms the camera, so zoom back afterwards.
+- Or open the **F4** panel, where the window stays visible, and adjust **Desk window ahead** and **right**, **Desk below your eyes** (your desk's height under your eyes), and the window's **width**, **depth** and **turn**. The panel covers the middle of the window in the world; in the main menu it's out of the way.
 
 The window also works in menus and loading screens. On your monitor it shows as a green rectangle.
 
 **Why hold a key?** In the tabletop view your character is in about the same direction as your keyboard, so a window that opened by itself whenever you looked down would cover the board while you play. `DeskWindow.Mode` changes this:
 
-- **Hold** (default): while you hold the key.
-- **Toggle**: the key turns it on and off.
-- **LookDown**: while your head points further down than `DeskWindow.LookDownAngle` (50° below the horizon by default). The key turns this off and on. It only works if you tilt your head further down for your keyboard than for your character; the log's `Perf:` line shows where your head points with the window hidden and shown.
-- **Always**: all the time. The key turns it off and on.
+- **Hold** (default): while you hold the side button.
+- **Toggle**: the side button turns it on and off.
+- **LookDown**: while your head points further down than `DeskWindow.LookDownAngle` (50° below the horizon by default). The side button turns this off and on. It only works if you tilt your head further down for your keyboard than for your character; the log's `Perf:` line shows where your head points with the window hidden and shown.
+- **Always**: all the time. The side button turns it off and on.
+
+G shows the window while you hold it in every mode except Off.
 - **Off**.
 
 The window is green by default. If you pick another colour in the headset's Chroma Key panel, set `DeskWindow.KeyColor` to the same one (Green, Blue, Magenta, Red or Cyan).
 
-**The key.** By default your mouse's rear side button (`MouseBack`) or **G** shows the window. The side button is the easiest to hold while you move, since your left hand stays on WASD. V Rising also uses that button, as the second binding of **Interrupt Ability Cast** (the game calls it Mouse 3), so clear it once: in the game's settings, open the key bindings, click that action's second binding and press Backspace. Its main key stays. Don't use the front side button, which the game uses for Auto Run. G is a keyboard key V Rising doesn't use, next to F.
+**The keys.** By default your mouse's rear side button (`MouseBack`) shows the window, and **G** shows it and moves it. The side button is the easiest to hold while you move, since your left hand stays on WASD. V Rising also uses that button, as the second binding of **Interrupt Ability Cast** (the game calls it Mouse 3), so clear it once: in the game's settings, open the key bindings, click that action's second binding and press Backspace. Its main key stays. Don't use the front side button, which the game uses for Auto Run. G is a keyboard key V Rising doesn't use, next to F; without side buttons, hold G (and keep the mouse still) to see your desk.
 
-To pick another key, open the **F4** panel, click the **Desk window key** row at the top and press the key or mouse button (Esc cancels). It replaces both defaults. It's saved as `DeskWindow.Key`, which can also list several keys separated by commas.
+To pick other keys, open the **F4** panel, click one of the two key rows at the top and press the key or mouse button (Esc cancels). They're saved as `DeskWindow.Key` and `DeskWindow.MoveKey`, which can also list several keys separated by commas. `DeskWindow.MoveSpeed` sets how far the window moves with the mouse, and `DeskWindow.RotateStep` how far one wheel notch turns it (negative turns it the other way).
 
 ## Known limitations
 
@@ -191,7 +194,7 @@ Common problems:
 - **Low frame rate:** see the performance tips above. The log prints a `Perf:` line every 5 seconds with the frame rate and GPU time.
 - **The desk window is a green rectangle:** the headset isn't keying it. Check that the **Chroma Key** panel in the SteamVR dashboard says ON and that its colour matches `DeskWindow.KeyColor`. If the panel is missing, set the tool up again (see "Seeing your desk").
 - **Patches of the game show your room:** lower **Similarity** in the headset's Chroma Key panel.
-- **The window is in the wrong place:** press F9 while sitting normally, then use the F4 panel's **Place the desk window where you face** button.
+- **The window is in the wrong place:** press F9 while sitting normally, then hold G and move the mouse (and scroll to turn) until the window is over your keyboard.
 - **Something looks wrong:** press F5 for a 3D capture and include it, along with the log, when you report the problem (see below).
 
 ## Feedback and bug reports
