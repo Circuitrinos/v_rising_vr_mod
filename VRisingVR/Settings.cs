@@ -33,6 +33,24 @@ internal enum PoseSource
     Predicted,
 }
 
+/// <summary>When the window onto your desk shows (Steam Frame passthrough, see DeskWindow).</summary>
+internal enum DeskWindowMode
+{
+    /// <summary>While the desk window key is held.</summary>
+    Hold,
+    /// <summary>The key turns it on and off.</summary>
+    Toggle,
+    /// <summary>While you look down past LookDownAngle; the key turns this off and on.</summary>
+    LookDown,
+    /// <summary>All the time; the key turns it off and on.</summary>
+    Always,
+    /// <summary>Never.</summary>
+    Off,
+}
+
+/// <summary>Pure colours the headset can key out; the chroma-key tool's panel has the same presets.</summary>
+internal enum ChromaKeyColor { Green, Blue, Magenta, Red, Cyan }
+
 internal static class Settings
 {
     public static ConfigFile File;
@@ -77,21 +95,15 @@ internal static class Settings
     public static ConfigEntry<bool> ScreenFlipVertical;
     public static ConfigEntry<bool> ScreenCursor;
 
-    public static ConfigEntry<bool> PassthroughEnabled;
-    public static ConfigEntry<string> PassthroughHost;
-    public static ConfigEntry<int> PassthroughPort;
-    public static ConfigEntry<string> PassthroughToken;
-    public static ConfigEntry<int> PassthroughResolution;
-    public static ConfigEntry<int> PassthroughFps;
-    public static ConfigEntry<bool> PassthroughLookDown;
-    public static ConfigEntry<float> PassthroughLookDownAngle;
-    public static ConfigEntry<float> PassthroughOpacity;
-    public static ConfigEntry<float> PassthroughFieldOfView;
-    public static ConfigEntry<float> PassthroughCropLeft;
-    public static ConfigEntry<float> PassthroughHorizontalOffset;
-    public static ConfigEntry<float> PassthroughVerticalOffset;
-    public static ConfigEntry<float> PassthroughDistance;
-    public static ConfigEntry<Key> PassthroughKey;
+    public static ConfigEntry<DeskWindowMode> DeskMode;
+    public static ConfigEntry<ChromaKeyColor> DeskColor;
+    public static ConfigEntry<float> DeskLookDownAngle;
+    public static ConfigEntry<float> DeskForward;
+    public static ConfigEntry<float> DeskRight;
+    public static ConfigEntry<float> DeskBelowEyes;
+    public static ConfigEntry<float> DeskWidth;
+    public static ConfigEntry<float> DeskDepth;
+    public static ConfigEntry<string> DeskKey;
 
     public static ConfigEntry<Key> ToggleKey;
     public static ConfigEntry<Key> ScreenToggleKey;
@@ -200,46 +212,41 @@ internal static class Settings
             "Flip the virtual screen vertically. Use this if it appears upside down.");
         ScreenCursor = cfg.Bind("Screen", "ShowCursor", true, "Draw the mouse cursor on the virtual screen.");
 
-        PassthroughEnabled = cfg.Bind("Passthrough", "Enabled", false,
-            "Steam Frame only: show the headset's camera view, to see your keyboard and mouse. Needs the VRisingVR passthrough " +
-            "server installed on the headset (see the README) and its token below.");
-        PassthroughHost = cfg.Bind("Passthrough", "Host", "frame.local", "The headset's network name or IP address.");
-        PassthroughPort = cfg.Bind("Passthrough", "Port", 47816, "The passthrough server's port.");
-        PassthroughToken = cfg.Bind("Passthrough", "Token", "",
-            "The secret the server created on the headset, in ~/.config/vrisingvr-passthrough/token. It keeps others on your network out of the camera.");
-        PassthroughResolution = cfg.Bind("Passthrough", "Resolution", 960, new ConfigDescription(
-            "Width of the camera frames in pixels (16:9). Higher is sharper but costs more network and decoding time.",
-            new AcceptableValueRange<int>(320, 1920)));
-        PassthroughFps = cfg.Bind("Passthrough", "FrameRate", 30, new ConfigDescription(
-            "Camera frames per second.", new AcceptableValueRange<int>(5, 60)));
-        PassthroughLookDown = cfg.Bind("Passthrough", "ShowWhenLookingDown", true,
-            "Fade the camera view in while you look down past LookDownAngle, toward your desk.");
-        PassthroughLookDownAngle = cfg.Bind("Passthrough", "LookDownAngle", 45f, new ConfigDescription(
-            "Degrees below the horizon at which the camera view appears. Keep it steeper than where you look at the board.",
+        DeskMode = cfg.Bind("DeskWindow", "Mode", DeskWindowMode.Hold,
+            "When the window onto your real desk shows (Steam Frame with the chroma-key tool, see the README). Hold: while you " +
+            "hold the desk window key. Toggle: the key turns it on and off. LookDown: while you look down past LookDownAngle " +
+            "(the key turns this off and on). Always: all the time (the key turns it off and on). Off: never. " +
+            "It also shows while the VR settings panel is open, so you can line it up.");
+        DeskColor = cfg.Bind("DeskWindow", "KeyColor", ChromaKeyColor.Green,
+            "The colour the window is filled with. Pick the same colour in the chroma-key panel on the headset (same presets).");
+        DeskLookDownAngle = cfg.Bind("DeskWindow", "LookDownAngle", 50f, new ConfigDescription(
+            "LookDown mode: degrees below the horizon your head must point before the window shows. This only works if you " +
+            "tilt your head further down to look at your keyboard than to look at your character, which the tabletop view " +
+            "often doesn't need. The log's Perf line shows where your head points with the window hidden and shown.",
             new AcceptableValueRange<float>(10f, 85f)));
-        PassthroughOpacity = cfg.Bind("Passthrough", "Opacity", 1f, new ConfigDescription(
-            "Opacity of the camera view.", new AcceptableValueRange<float>(0.1f, 1f)));
-        // SteamVR's camera image spans the left eye's whole view: on the Steam Frame its tangents are -1.661..1.216
-        // across and -1.729..1.172 vertically, i.e. about 110 degrees wide, centred 12.5 degrees left and 15.5 below.
-        PassthroughFieldOfView = cfg.Bind("Passthrough", "FieldOfView", 110f, new ConfigDescription(
-            "Horizontal field of view of the camera image in degrees (the Steam Frame's left eye sees about 110). Adjust it, " +
-            "with the offsets, until your desk lines up with where it really is.",
-            new AcceptableValueRange<float>(40f, 160f)));
-        PassthroughCropLeft = cfg.Bind("Passthrough", "CropLeft", 0.12f, new ConfigDescription(
-            "Fraction of the image cut off on the left. SteamVR's image is your left eye's view, which reaches further left " +
-            "than the camera covers; there it stretches the edge pixels sideways (5-10% of the width).",
-            new AcceptableValueRange<float>(0f, 0.5f)));
-        PassthroughHorizontalOffset = cfg.Bind("Passthrough", "HorizontalOffset", -12.5f, new ConfigDescription(
-            "Moves the camera view right (positive) or left, in degrees. The left eye's view is centred about 12.5 degrees left.",
-            new AcceptableValueRange<float>(-45f, 45f)));
-        PassthroughVerticalOffset = cfg.Bind("Passthrough", "VerticalOffset", -15.5f, new ConfigDescription(
-            "Moves the camera view up (positive) or down, in degrees. The left eye's view is centred about 15.5 degrees down.",
-            new AcceptableValueRange<float>(-45f, 45f)));
-        PassthroughDistance = cfg.Bind("Passthrough", "Distance", 0.6f, new ConfigDescription(
-            "How far away the camera view floats, in meters. About your desk's distance looks most natural.",
-            new AcceptableValueRange<float>(0.2f, 3f)));
-        PassthroughKey = cfg.Bind("Keys", "Passthrough", Key.F3,
-            "Keep the headset camera view on, or back to showing it only while looking down (Steam Frame passthrough).");
+        DeskForward = cfg.Bind("DeskWindow", "Forward", 0.45f, new ConfigDescription(
+            "How far ahead of your eyes (where they were at the last recenter) the window's center is, in meters. " +
+            "The F4 panel's place button sets this and Right to where you're facing.",
+            new AcceptableValueRange<float>(0.1f, 1.5f)));
+        DeskRight = cfg.Bind("DeskWindow", "Right", 0f, new ConfigDescription(
+            "How far right of your eyes the window's center is, in meters (negative = left).",
+            new AcceptableValueRange<float>(-1f, 1f)));
+        DeskBelowEyes = cfg.Bind("DeskWindow", "BelowEyes", 0.45f, new ConfigDescription(
+            "How far below your eyes (at the last recenter) your desk's surface is, in meters. The window lies flat at that height.",
+            new AcceptableValueRange<float>(0.1f, 1.2f)));
+        DeskWidth = cfg.Bind("DeskWindow", "Width", 0.8f, new ConfigDescription(
+            "Width of the window in meters, left to right. 0.8 covers a keyboard with a mouse beside it.",
+            new AcceptableValueRange<float>(0.2f, 2f)));
+        DeskDepth = cfg.Bind("DeskWindow", "Depth", 0.35f, new ConfigDescription(
+            "Depth of the window in meters, front to back.", new AcceptableValueRange<float>(0.1f, 1f)));
+        // Names rather than a Key, so they can also be mouse buttons. Changed in the F4 panel too: click its row, press the key.
+        DeskKey = cfg.Bind("DeskWindow", "Key", "MouseBack, G",
+            "The desk window key: hold it to see your desk (Hold mode), or press it to turn the window on and off (the other " +
+            "modes). One or more, separated by commas: key names (G, V, H, " +
+            "F3, CapsLock, Digit5, Numpad0, Semicolon, ...) or mouse buttons (MouseBack and MouseForward are the side buttons, " +
+            "MouseMiddle the wheel). The rear side button is easiest to hold while you move, but V Rising also uses it by " +
+            "default, as the second binding of Interrupt Ability Cast (its Mouse 3): clear that in the game's controls. " +
+            "G is a keyboard key V Rising doesn't use.");
 
         ToggleKey = cfg.Bind("Keys", "ToggleVR", Key.F8, "Start/stop VR.");
         IsolationKey = cfg.Bind("Keys", "CycleEyeIsolation", Key.F6,

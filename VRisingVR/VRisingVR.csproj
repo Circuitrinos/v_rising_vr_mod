@@ -3,7 +3,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <AssemblyName>VRisingVR</AssemblyName>
     <RootNamespace>VRisingVR</RootNamespace>
-    <Description>Tabletop-style VR camera for V Rising (client only)</Description>
+    <Description>Tabletop-style VR camera for V Rising, with a window onto your desk for the Steam Frame (client only)</Description>
     <!-- The one place the version lives: the plugin, the Thunderstore manifest and the zip names use it. -->
     <Version>1.1.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -28,11 +28,13 @@
 
     <!-- Release zips (PackageMod below). The description is Thunderstore's one-liner: at most 250 characters,
          and no semicolons (MSBuild would split the manifest line there). -->
-    <ThunderstoreName>VRisingVR</ThunderstoreName>
+    <!-- The passthrough edition is its own package. It is the same plugin (same GUID), so installing it
+         replaces VRisingVR: BepInEx runs only the higher version when both are installed. -->
+    <ThunderstoreName>VRisingVR_Passthrough</ThunderstoreName>
     <!-- The Thunderstore team that uploads the package. The Thunderstore zip is named Team-Name-Version.zip, like
          Thunderstore's own downloads, because r2modman's "Import local mod" takes the author from that file name. -->
     <ThunderstoreTeam>Circuitrinos</ThunderstoreTeam>
-    <ThunderstoreDescription>Play V Rising in VR like a 3D board game: the game's own top-down camera in stereo with head tracking, the HUD floating in front of you, and health bars and names over the characters. Client-side only. Needs SteamVR.</ThunderstoreDescription>
+    <ThunderstoreDescription>VRisingVR with a window onto your desk for the Steam Frame: hold a mouse side button to see your keyboard, mouse and hands in the headset's passthrough (needs a community chroma-key tool). Use it instead of VRisingVR. Client-side only. Needs SteamVR.</ThunderstoreDescription>
     <ThunderstoreWebsite>https://github.com/Circuitrinos/v_rising_vr_mod</ThunderstoreWebsite>
     <ThunderstoreDependency>BepInEx-BepInExPack_V_Rising-1.733.2</ThunderstoreDependency>
     <RepoDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..'))\</RepoDir>
@@ -99,8 +101,8 @@
   </Target>
 
   <!-- Release builds also write the release zips to ..\dist (skip with -p:Package=false):
-         <Team>-VRisingVR-<version>.zip  for Thunderstore, and for r2modman's "Import local mod"
-         VRisingVR-<version>-manual.zip  to extract into the game folder (BepInEx\plugins\VRisingVR) -->
+         <Team>-<ThunderstoreName>-<version>.zip  for Thunderstore, and for r2modman's "Import local mod"
+         <ThunderstoreName>-<version>-manual.zip  to extract into the game folder (BepInEx\plugins\VRisingVR) -->
   <Target Name="PackageMod" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' And '$(Package)' != 'false'">
     <PropertyGroup>
       <StageDir>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)package\</StageDir>

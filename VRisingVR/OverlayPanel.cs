@@ -30,9 +30,6 @@ internal sealed class OverlayPanel
     private float _placedDistance;
     private float _width = -1f;
     private float _lookAwayTime;
-    private float _alpha = 1f;
-    private VRTextureBounds_t _bounds;
-    private HmdMatrix34_t _hmdRelative;
 
     /// <param name="opaque">Ignore the texture's alpha (a mirror of the back buffer) rather than treating it as premultiplied (UI layer).</param>
     /// <param name="sortOrder">Overlays with a higher sort order are drawn on top.</param>
@@ -90,48 +87,10 @@ internal sealed class OverlayPanel
             "SetOverlayFlag");
         var bounds = new VRTextureBounds_t { uMin = 0f, uMax = 1f, vMin = flipVertical ? 1f : 0f, vMax = flipVertical ? 0f : 1f };
         overlay.SetOverlayTextureBounds(_overlay, ref bounds);
-        _bounds = bounds;
 
         Plugin.Logger.LogInfo($"Overlay '{_key}' created.");
         return true;
     }
-
-    /// <summary>Overall opacity (0-1) on top of the texture's own alpha.</summary>
-    public void SetAlpha(float alpha)
-    {
-        if (_overlay == 0 || MathF.Abs(alpha - _alpha) < 1e-3f)
-            return;
-        Check(OpenVR.Overlay.SetOverlayAlpha(_overlay, alpha), "SetOverlayAlpha");
-        _alpha = alpha;
-    }
-
-    /// <summary>Show only the texture's columns from <paramref name="uMin"/> to <paramref name="uMax"/> (e.g. to crop an edge).</summary>
-    public void SetTextureBounds(float uMin, float uMax, bool flipVertical)
-    {
-        var bounds = new VRTextureBounds_t { uMin = uMin, uMax = uMax, vMin = flipVertical ? 1f : 0f, vMax = flipVertical ? 0f : 1f };
-        if (_overlay == 0 || (bounds.uMin == _bounds.uMin && bounds.uMax == _bounds.uMax && bounds.vMin == _bounds.vMin && bounds.vMax == _bounds.vMax))
-            return;
-        Check(OpenVR.Overlay.SetOverlayTextureBounds(_overlay, ref bounds), "SetOverlayTextureBounds");
-        _bounds = bounds;
-    }
-
-    /// <summary>
-    /// Attach the panel to the headset, so it moves with the head: <paramref name="transform"/> places it in
-    /// HMD space (X right, Y up, -Z forward; an identity rotation faces the viewer).
-    /// </summary>
-    public void PlaceRelativeToHmd(HmdMatrix34_t transform)
-    {
-        if (_overlay == 0 || (_placed && SameTransform(transform, _hmdRelative)))
-            return;
-        Check(OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(_overlay, OpenVR.k_unTrackedDeviceIndex_Hmd, ref transform),
-            "SetOverlayTransformTrackedDeviceRelative");
-        _hmdRelative = transform;
-        _placed = true;
-    }
-
-    private static bool SameTransform(HmdMatrix34_t a, HmdMatrix34_t b) =>
-        a.m0 == b.m0 && a.m1 == b.m1 && a.m2 == b.m2 && a.m3 == b.m3 && a.m4 == b.m4 && a.m5 == b.m5 &&
-        a.m6 == b.m6 && a.m7 == b.m7 && a.m8 == b.m8 && a.m9 == b.m9 && a.m10 == b.m10 && a.m11 == b.m11;
 
     /// <summary>
     /// Place (or keep) the panel; returns false until a head pose has placed it once. The panel's
@@ -181,8 +140,6 @@ internal sealed class OverlayPanel
         _visible = false;
         _placed = false;
         _width = -1f;
-        _alpha = 1f;
-        _bounds = default;
     }
 
     /// <summary>Re-place the panel if it has been out of view (or too far/near) for a moment.</summary>

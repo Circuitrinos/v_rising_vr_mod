@@ -33,4 +33,43 @@ internal static class VRMath
         m.m32 = -1f;
         return m;
     }
+
+    /// <summary>
+    /// View matrix for drawing in OpenVR tracking space (right-handed, real meters) as one eye sees it: tracking
+    /// space to that eye's space (-Z forward), the convention SetViewProjectionMatrices expects. The eye sits at
+    /// <paramref name="head"/> times <paramref name="eyeToHead"/>, your real eye position.
+    /// </summary>
+    public static Matrix4x4 TrackingView(HmdMatrix34_t head, HmdMatrix34_t eyeToHead)
+    {
+        // The eye's pose in tracking space: rotation r and position t of head * eyeToHead.
+        float r00 = head.m0 * eyeToHead.m0 + head.m1 * eyeToHead.m4 + head.m2 * eyeToHead.m8;
+        float r01 = head.m0 * eyeToHead.m1 + head.m1 * eyeToHead.m5 + head.m2 * eyeToHead.m9;
+        float r02 = head.m0 * eyeToHead.m2 + head.m1 * eyeToHead.m6 + head.m2 * eyeToHead.m10;
+        float r10 = head.m4 * eyeToHead.m0 + head.m5 * eyeToHead.m4 + head.m6 * eyeToHead.m8;
+        float r11 = head.m4 * eyeToHead.m1 + head.m5 * eyeToHead.m5 + head.m6 * eyeToHead.m9;
+        float r12 = head.m4 * eyeToHead.m2 + head.m5 * eyeToHead.m6 + head.m6 * eyeToHead.m10;
+        float r20 = head.m8 * eyeToHead.m0 + head.m9 * eyeToHead.m4 + head.m10 * eyeToHead.m8;
+        float r21 = head.m8 * eyeToHead.m1 + head.m9 * eyeToHead.m5 + head.m10 * eyeToHead.m9;
+        float r22 = head.m8 * eyeToHead.m2 + head.m9 * eyeToHead.m6 + head.m10 * eyeToHead.m10;
+        float tx = head.m0 * eyeToHead.m3 + head.m1 * eyeToHead.m7 + head.m2 * eyeToHead.m11 + head.m3;
+        float ty = head.m4 * eyeToHead.m3 + head.m5 * eyeToHead.m7 + head.m6 * eyeToHead.m11 + head.m7;
+        float tz = head.m8 * eyeToHead.m3 + head.m9 * eyeToHead.m7 + head.m10 * eyeToHead.m11 + head.m11;
+
+        // Its inverse: the transposed rotation, and the position taken back through it.
+        var view = new Matrix4x4();
+        view.m00 = r00;
+        view.m01 = r10;
+        view.m02 = r20;
+        view.m03 = -(r00 * tx + r10 * ty + r20 * tz);
+        view.m10 = r01;
+        view.m11 = r11;
+        view.m12 = r21;
+        view.m13 = -(r01 * tx + r11 * ty + r21 * tz);
+        view.m20 = r02;
+        view.m21 = r12;
+        view.m22 = r22;
+        view.m23 = -(r02 * tx + r12 * ty + r22 * tz);
+        view.m33 = 1f;
+        return view;
+    }
 }

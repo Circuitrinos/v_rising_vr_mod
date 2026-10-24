@@ -1,2 +1,0 @@
-# The headset files run on Linux (SteamOS): keep LF line endings on every checkout.
-headset/** text eol=lf

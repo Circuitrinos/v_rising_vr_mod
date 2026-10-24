@@ -10,8 +10,10 @@ namespace VRisingVR;
 [BepInProcess("VRising.exe")] // client only; never loads into VRisingServer.exe
 public class Plugin : BasePlugin
 {
+    // The same GUID as VRisingVR: this edition replaces it (BepInEx runs only the higher version of the two)
+    // and keeps its settings file.
     public const string Guid = "vrisingvr.tabletop";
-    public const string Name = "VRisingVR";
+    public const string Name = "VRisingVR Passthrough";
     public const string Version = PluginVersion.Value; // from <Version> in VRisingVR.csproj
 
     internal static ManualLogSource Logger;

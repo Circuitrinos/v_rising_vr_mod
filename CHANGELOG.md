@@ -2,7 +2,14 @@
 
 ## 1.1.0 (in development)
 
-- Passthrough on the Steam Frame: look down at your desk (or press F3) to see your keyboard, mouse and hands through the headset's camera. Needs a small server installed on the headset; see the README.
+First release of **VRisingVR Passthrough**, VRisingVR 1.0.3 plus a window onto your desk for the Steam Frame. It is a separate Thunderstore package and replaces VRisingVR (same plugin and settings file).
+
+- Hold your mouse's rear side button (or G) to see your keyboard, mouse and hands: the mod draws a pure green rectangle over your desk, and the community chroma-key tool on the headset shows the passthrough there. The HUD steps aside while you hold it. Setting up the tool is described in the README.
+- The F4 panel's **Place the desk window where you face** button moves the window to the spot your face points at after a 3-second countdown, and from then on it stays put when you re-center or take the headset off, until VR restarts. The panel also adjusts its position and size, and shows it while open. (No Ctrl shortcut: holding Ctrl opens V Rising's transformation wheel.)
+- The key is the rear mouse side button or G by default. The side button is easiest to hold while moving; clear V Rising's second binding of Interrupt Ability Cast on it first (see the README). The F4 panel's top row changes the key: click it and press any key or mouse button. It's saved as `DeskWindow.Key`.
+- The F4 panel scales with the window's height, so its extra rows fit on screens smaller than 1080p.
+- `DeskWindow.Mode` picks when it shows: Hold (default), Toggle, LookDown, Always or Off. `DeskWindow.KeyColor` matches the tool's colour presets.
+- The log's `Perf:` line reports how often the window showed and where your head pointed, for tuning LookDown.
 
 ## 1.0.3
 

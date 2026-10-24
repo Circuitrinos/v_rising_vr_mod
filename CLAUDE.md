@@ -208,38 +208,85 @@ After the 22:27 session the user called the mod "effectively perfect" and asked 
   - The mod managers' V Rising list (`/c/v-rising/api/v1/package-listing-index/`, a periodically rebuilt snapshot) had VRisingVR at 02:05 UTC, about 25 min after the upload; the snapshot before it was built at 01:33:57. Installing it from TMM's Get mods then installed BepInExPack_V_Rising automatically (user-verified, 2026-10-22).
 - **Repo prepared for a public GitHub mirror (2026-10-22):** the history was rewritten so every commit and tag uses the public alias `services+github_issues@circuitrinos.com`, which is also the repo-local `user.email`; keep committing with it. Personal notes about the test PC were reworded, the Forgejo address was removed, LICENSE names Circuitrinos, `documentation/LICENSE` carries the V Rising Modding wiki's MIT notice, and `.obsidian/workspace.json` is no longer tracked. A second rewrite changed the name on every commit and tag to Circuitrinos (also the repo-local `user.name`), so the full name appears nowhere in the published history.
 
-## Passthrough on the Steam Frame (1.1.0, in development, 2026-10-23)
-- **Not working, source found to be wrong (2026-10-23).** `/dev/video99` is not a camera feed. SteamVR's `v4l2cam` forwards the `system.HeadsetView` overlay (strings: "Got headset view overlay", `VR_Compositor_MirrorOverlayUpdated`; `IVRHeadsetView` reports 1920x1080, left eye, uncropped), i.e. a mirror of what the headset displays, like SteamVR's VR View. It looked like a camera only while the headset showed passthrough (idle or standby). The user confirmed it by turning passthrough off; with the headset on, the mirror was black, and in a game it would show the game.
-  - `IVRTrackedCamera_006` on the headset: `HasCamera(HMD)` is true, but `GetCameraFrameSize` fails (OperationFailed, awake or not), and `AcquireVideoStreamingService` returns success with a handle that's invalid for frames and release. So it doesn't stream. Valve's own tools reference internal `IVRTrackedCameraInternal` / `IVRCameraPassthroughInternal_001` instead (undocumented).
-  - With passthrough off, `XRService` still holds both `arcimx616` subdevs (28, 29) and the og01a1b pair (30, 31), and releases the `og0ve10` pair (32, 33) plus video6/video7. So the Arcturus color sensors are never freed.
-  - Remaining options: drive the Arcturus sensors directly through qcom-camss while SteamVR passthrough is off (raw Bayer, our own debayer/white balance/exposure, a conflict risk with XRService, fragile across updates); ask Arcturus (they take direct-access inquiries) or Valve for camera access for streamed apps; or the camera-free virtual keyboard. The server, protocol and mod panel are reusable with any real frame source. The user's profile config has `Passthrough.Enabled = false` again.
-The user asked to see their keyboard and mouse while playing. SteamVR gives streamed PC apps neither camera access nor passthrough blending (Arcturus's developer page: blending only for apps running on the Frame, no direct camera API), so a server on the headset streams the camera view to the mod.
-- **Headset access:** Developer Mode, then `ssh -i ~/.ssh/steam_frame_claude steamos@frame`. The key (label `claude-code-steam-frame`, made 2026-10-23) can be revoked in `~/.ssh/authorized_keys` on the Frame. `steamos` is in the video, cdsp and wheel groups; sudo needs the user's password. SteamOS 0.4.5 (20261007), Linux 6.18 aarch64, Python 3.12, ffmpeg with mjpeg and h264_v4l2m2m.
-- **Camera facts (probed 2026-10-23):**
-  - The cameras are V4L2 (qcom-camss): mono `og01a1b` ×2 and `og0ve10` ×2, plus color `arcimx616` ×2. The color pair is the Arcturus camera, attached on the test Frame (`colorPassthroughCalibrationHistory.json` exists). SteamVR's `XRService` holds all six sensors.
-  - SteamVR's own forwarder `v4l2cam --output=99` (user service `steamvr-v4l2cam`) copies a passthrough image ("Copy rgb subrect", through `IVRCameraPassthroughInternal_001` / `IVRTrackedCameraInternal`) into the v4l2loopback device `/dev/video99` "SteamVR". It's 1920x1080 RGB3, nominally 30 fps (about 85 fps measured), with `exclusive_caps=1` and `max_openers=10`. Reading it doesn't touch the sensors.
-  - The image is the left eye's passthrough view, and its left edge is smeared. That eye's view reaches further left than the Arcturus camera covers, so SteamVR repeats each row's edge pixel there (clamp-to-edge streaks). Measured on a 1080p frame: about 5% of the width at the top and bottom, about 10% in the middle rows (a curved lens edge). `CropLeft` defaults to 0.12.
-  - **Arcturus Vision camera** (arcturus.vision, 2026-10-23): two 32 MP Sony sensors (the IMX616s), 64 mm apart, binocular FOV 125×105°, passthrough at 60 fps by default, 10-bit HLG. Its developer page: no direct camera API yet (they take inquiries at support@arcturus.vision / Discord), and passthrough blending (OpenXR `XR_ENVIRONMENT_BLEND_MODE_ALPHA_BLEND`) only for apps running on the Frame, not streamed PC apps.
-  - **The image spans the left eye's whole view**, inferred from the smear. The left eye's tangents are -1.661..1.216; a camera covering ~52.5° (half of 105°) to that side leaves tan 1.303..1.661 uncovered, ~12% of the width, against the ~10% measured. Hence the defaults: FieldOfView 110 (2·atan 1.4385), HorizontalOffset -12.5°, and VerticalOffset -15.5°. The vertical one assumes the 16:9 crop is centred on the eye image, whose vertical tangents are -1.729..1.172; it's the least certain. The panel sits in front of the left eye (`GetEyeToHeadTransform(Eye_Left).m3`, about -32 mm), so that eye sees the image lined up.
-- **Server** (`headset/`: `install.sh`, `vrisingvr-passthrough.py`, a systemd `--user` unit):
-  - Installs to `~/.local/share/vrisingvr-passthrough`, with the token (64 hex) in `~/.config/vrisingvr-passthrough/token`. Port 47816.
-  - ffmpeg reads `/dev/video99` only while an authenticated client is connected. Its `mpjpeg` output carries a Content-length per frame, so frames split without scanning JPEG data.
-  - Protocol: a JSON hello line `{token, width, fps, quality}` → `OK w h` or `ERR …` → repeated uint32 big-endian length + JPEG, newest frame only. One mod connection at a time.
-  - Browser: `/` is a test page for future users (what the server is, a token box, where the token lives, whether `/dev/video99` exists). `/?token=…` shows the live view and the token ready to copy; the raw MJPEG is `/stream?token=…`. Browser views don't replace the mod's connection.
-  - Measured from the PC: 29 fps at 960x540, ~58 KB/frame, 1.7 MB/s, first frame after ~1.2 s.
-  - **Standby:** when nobody wears the headset, SteamVR enters standby (`SteamVR: headset off`, `[DeckardCaptureSource] Passthrough cameras paused`), and `/dev/video99` keeps repeating the last picture at ~1 fps (byte-identical frames). So the server never sends a picture identical to the previous one, and sends a zero-length keep-alive to the mod every 5 s instead. The mod skips keep-alives and hides its panel after 1 s without a new picture. `/status?token=…` reports streams, stream age and the age of the last new picture (the first picture of a stream doesn't count, since it may be an old repeat); the viewer page polls it and shows Live or Paused.
-  - While paused, ffmpeg ignores SIGTERM, so `Stream.stop` kills it after 3 s and reaps it (it once lingered as a zombie). `client_gone` (a non-blocking select + MSG_PEEK) ends streams whose client closed while no frames were going out.
-- **Network:** `frame.local` resolves to the wireless adapter's direct link, `frame` to the home network. The mod defaults to `frame.local`.
-- **Mod side:**
-  - `PassthroughFeed` is a background TCP thread that reconnects by itself and never logs (main thread only).
-  - `PassthroughPanel` is an `OverlayPanel` fixed to the HMD (`SetOverlayTransformTrackedDeviceRelative`), sort order 10, above the HUD (1).
-  - Each frame: `ImageConversion.LoadImage` into a scratch Texture2D, then `Graphics.CopyTexture` into a fixed texture whose native pointer is fetched once. No `Graphics.Blit`: its shader may be stripped in this HDRP game. Decoding runs only while the panel shows.
-  - Geometry: a flat panel at `Distance` d with points at d·tan(angle) (pinhole), `FieldOfView` (default 110°, the left eye's view), `CropLeft` 0.12 through texture bounds, and offsets in degrees. V is flipped like the other Unity textures.
-  - It fades in when the head pitch is below -`LookDownAngle` (default 45°, 5° hysteresis), F3 pins it, and it hides when the newest frame is over 1 s old. F4 shows five passthrough sliders only when `Passthrough.Enabled`.
-- **Test setup:** the user's TMM profile config has `[Passthrough] Enabled = true` and the token. Test builds deploy to the profile's `plugins\VRisingVR`, next to the Thunderstore copy in `plugins\Circuitrinos-VRisingVR`; BepInEx loads only the higher version. Delete `plugins\VRisingVR` once the release is installed from Thunderstore.
-- **Untested on hardware (first test pending):** the image orientation (V flip), LoadImage + CopyTexture on D3D11, the FOV and offset defaults, latency, and the headset's CPU load while streaming.
-- **Next (the user's idea):** detect the keyboard, mouse and hands with an image model and show passthrough only there, with an opacity setting. The panel is already aligned with the real view, so this needs a mask (e.g. an alpha channel from the server and a premultiplied overlay). Detection could run on the headset's Hexagon DSP (steamos is in the cdsp group) or on the PC.
-- The headset also runs other services of the user's and a distrobox container. They aren't ours: don't touch them.
+## Passthrough on the Steam Frame: VRisingVR Passthrough (1.1.0, in development, 2026-10-23)
+The user asked to see their keyboard and mouse while playing. It ships as a **separate Thunderstore package**, `VRisingVR_Passthrough`, from this `passthrough` branch; `main` stays VRisingVR for gamepad players (the user's decision).
+- **Route: chroma key.** The mod draws a pure key-colour rectangle over the desk into the eye images. On the headset, the community tool [steam-frame-chroma-key](https://github.com/spyjacob/steam-frame-chroma-key) (MIT) shows native passthrough wherever the streamed picture has that colour. It is a user-scope implicit Vulkan layer that swaps vrcompositor's `distort_ps_achromatic_se2.spv` for a patched copy computing alpha from a CbCr key, plus the hidden setting `camera/forceSceneAlphaBlending`. The tool is the user's install, not part of the mod.
+  - Reviewed in full at commit 535c5f224768f85d7f011fce9e1cf03e0ea802f8 (2026-10-23): no network code on the headset; negotiation fails in every process but vrcompositor (opt-in flag file, crash guard) and vrlink (log only); nothing under /opt or /usr.
+  - Caveats found:
+    - after a SteamOS update the old patched shader is still swapped in until `mrkey.sh` is re-run (overrides match by file name, not content);
+    - a diagnostic camera probe can read freed memory (no vkFreeMemory hook; deleting `cameraProbe(d);` in `compositor_hooks.inc` removes it);
+    - `/tmp/mrchroma-<pid>.log` grows ~2-3 MB/h (tmpfs);
+    - `uninstall.sh` clears the blending setting only while SteamVR runs;
+    - the dashboard panel runs scripts straight from `~/mr-chroma`, so `git pull` changes running code.
+  - On the test Frame (SteamOS 0.4.5 build 20261007.6125817, the build the author tested): all build tools present, all four shader anchors match.
+  - **The key covers the whole streamed image, not just our rectangle**, and CbCr distance ignores luma. At the tool's default similarity 0.32, saturated game greens key too: RGB (0.2, 0.6, 0.1) comes out ~98% passthrough. The README recommends 0.12 / 0.06; pure green still keys.
+- **Mod side (`DeskWindow`):**
+  - A flat quad lying on the desk, in OpenVR tracking space (standing universe, meters). Its offsets are measured from an anchor: `Forward`/`Right` along the anchor's heading, `BelowEyes` under its height, `Width`×`Depth`.
+    - Until placed, the anchor is `_recenterPose`, so the window follows F9 and the headset-on recenter.
+    - Placing it (the F4 panel's place button) freezes the anchor for the VR session, so proximity recenters (headset off and on) no longer move it off the keyboard (review finding). `ForgetPlacement` on `StandingZeroPoseReset` / `ChaperoneUniverseHasChanged`, and `Destroy` on StopVR, return it to following.
+    - Only the offsets are saved: whether the Frame's standing origin survives SteamVR restarts is unknown.
+  - It is drawn last into both eye RTs: after `DrawEyeOverlays` in `endCameraRendering`, or at the end of the frame, including into the menus' black frames, which are then cleared every frame after a draw.
+  - Each eye's view is `VRMath.TrackingView(_submitPose, eyeToHead)` (true IPD, not StereoStrength or WorldScale). The projection is its own (near 0.02 m), so it lines up with the real desk.
+  - The material is a UI/Default copy with `unity_GUIZTestMode` 8 (Always), a white texture and `_Color` = the key colour.
+  - Only pure primaries and secondaries are offered (`ChromaKeyColor`): 0 and 1 are the same in sRGB and linear, so the colour survives the sRGB eye RT exactly.
+  - **Hold-to-peek is the default, not look-down.** With the user's view settings the character appears roughly 50-55 degrees below the horizon and a desk keyboard roughly 45, so the window would cover the board, and a pitch gate can't tell the two apart (estimated, not measured).
+    - Modes: Hold, Toggle, LookDown (4-degree hysteresis), Always, Off.
+    - The window also shows while the F4 panel is open, for lining it up. The panel has a CanvasScaler (1920x1080 reference, match height), since its 17 rows are 1028 px tall.
+    - While a Hold peek shows the window, the HUD layer is hidden (`HudLayer.Tick(false)` only hides the overlay and pauses its camera). Otherwise the HUD, aimed at the feet, would cover the window; whether PC overlays are composited before the stream is encoded is unverified.
+    - **Placing it** is a button in the F4 panel. After a 3 s countdown (`VrSettingsPanel.TakePlaceRequest`, polled by VRRig.Update), the window is centred where the head's forward ray (not the eyes') meets the desk plane. Spots more than 1 m away along the floor are rejected.
+      - There is no key combination: every keyboard modifier is bound in V Rising. Holding Left Ctrl selects a transformation (the user, 2026-10-23), Shift is the vampire-power modifier and Alt the emote wheel. Ctrl+key was removed.
+  - **The desk key is `MouseBack, G`.** F3 was awkward with WASD (user, 2026-10-23); G came next, then the side button won in testing.
+    - It is `[DeskWindow] Key`, a string, so it can name mouse buttons. The F3 the first test saved stays behind as an orphaned `[Keys] DeskWindow`.
+    - `Hotkeys` parses a binding:
+      - InputSystem `Key` names, plus CapsLock and the US-position punctuation keys;
+      - a lone digit;
+      - `MouseMiddle` / `MouseBack` / `MouseForward` (VK 4/5/6).
+    - The F4 panel's top row is a Button: `onClick.AddListener((UnityAction)StartCapture)` compiles through C# 10's natural method-group type plus Il2CppInterop's implicit `Action` to `UnityAction` conversion. It is wrapped in try/catch, so a failure only disables the row.
+    - Capture takes the next newly pressed bindable input, Esc cancels, and the mod's own hotkeys are rejected.
+  - **V Rising's default bindings** (web guides 2022-2024 plus a Steam post of 2023-06; check in game for 1.1):
+    - movement and skills: WASD, Q E R C T, F interact, Space travel or drop, Shift cliff jump and power modifier;
+    - X (or Z) interrupt cast, Left Ctrl action wheel, Left Alt emote wheel, 1-8 action bar and powers;
+    - menus: Tab B M P J K, Enter chat, ` console;
+    - mouse: middle button for split, repair and push to talk; the thumb buttons, which the game numbers 3 and 4, are interrupt cast (second binding) and auto run.
+    - Free near WASD: G, V, H, and Caps Lock (which toggles caps).
+    - The user's `Settings4` folder has no InputSettings.json, so their bindings are the defaults.
+  - The Perf line reports `desk window shown X%, head pitch hidden p10/p50/p90, shown ..., board N deg down` (board = direction to the HUD anchor, the feet), to measure whether LookDown could work.
+- **Packaging:**
+  - `ThunderstoreName` is `VRisingVR_Passthrough`. The plugin GUID stays `vrisingvr.tabletop`: same settings file, and BepInEx runs only the higher version if both packages are installed. So this edition's versions must stay above main's (1.1.0 vs 1.0.3).
+  - The plugin's display name is "VRisingVR Passthrough".
+  - The icon has a green keyboard badge (drawn with PIL over the main icon).
+  - The README has a "Seeing your desk" section with the tool's setup.
+- **First hardware test (2026-10-23 16:21-16:23, main menu only):**
+  - Holding F3 showed a rectangular passthrough cutout at the user's keyboard and mouse with the default placement (after F9). So the menus' path (`Graphics.ExecuteCommandBuffer` into the black frames), the orientation (a Y flip would have put it above the horizon) and the keying at 0.12/0.06 all work.
+  - The tool ran at commit 535c5f2 without the probe removal. vrcompositor logged `OVERRIDDEN` for the scene shader, and the camera probe's tint was 0.7 (opacity 1) while streaming. Dips to 0-0.05 are SteamVR fading passthrough, e.g. headset off.
+  - In menus the Perf line shows `poses paired=0 stale=~450`. That predates the desk window: the menu frames are rendered and submitted with LateUpdate's pose, one frame old but consistent, so reprojection handles it.
+- **Second test (2026-10-23, about 98 min in the world):**
+  - The F4 rebind row works (the `UnityAction` conversion is fine). After clearing V Rising's second binding of Interrupt Ability Cast, the user bound **MouseBack**: "the mouse button is definitely the best option". So the default became `MouseBack, G`; `DeskWindow.Key` takes a comma list and holding any of them works.
+  - The game numbers mouse buttons from 0: its "Mouse 3" is MouseBack (XButton1, Interrupt Ability Cast's second binding) and its "Mouse 4" is MouseForward (Auto Run). Inferred from that binding.
+  - The HUD layer hid and came back with each peek. The default placement was good enough (never placed, `anchored False`). In the F5 info its plane was 0.758 m above the floor, a normal desk.
+  - **Head pitch per 5 s interval:**
+    - hidden (playing): p50 mostly 35-45 degrees down;
+    - shown (peeking): p50 30-43;
+    - the feet: 48-66 down.
+    - The eyes do the last ~20 degrees, so no look-down angle separates a peek from play. Hold is the right default, and LookDown stays an option.
+  - The F5 capture at 17:52 was taken on a loading screen: the eye images were black apart from the window (shown because the F4 panel was open). Expected.
+  - **Performance:** 23-28 fps (GPU 34-42 ms) at 2404² per eye, lower than the 31-37 fps of 2026-10-20. The GPU was idle afterwards, with no other heavy program. Likely the scene, or Overwolf's overlay now that the game starts from TMM. Not investigated.
+- **User verdict after the second test:** no false keying at 0.12/0.06, and the alignment is fine with the default placement.
+- **Still to check on hardware:**
+  - the F4 place button's countdown placement (F5 captures include the window; `_info.txt` lists its state and corners);
+- **Camera routes that failed (2026-10-23; details in commit 4d14b11):**
+  - `/dev/video99` is SteamVR's `v4l2cam` mirror of the `system.HeadsetView` overlay (what the headset displays), not a camera.
+  - `IVRTrackedCamera_006` reports a camera but `GetCameraFrameSize` fails.
+  - `XRService` holds the Arcturus `arcimx616` sensors even with passthrough off.
+  - Arcturus (two IMX616, 64 mm, 125x105 degrees) has no camera API and blends passthrough only for apps running on the headset.
+  - Direct sensor access is out of scope.
+  - The camera-stream server was removed from the headset on 2026-10-23.
+- **Headset access:** Developer Mode, then `ssh -i ~/.ssh/steam_frame_claude steamos@frame`.
+  - The key (label `claude-code-steam-frame`, made 2026-10-23) can be revoked in `~/.ssh/authorized_keys` on the Frame.
+  - sudo needs the user's password.
+  - The headset also runs other services of the user's and a distrobox container. They aren't ours: don't touch them.
+- **Test setup:** test builds deploy to the TMM profile's `plugins\VRisingVR`, next to the Thunderstore VRisingVR in `plugins\Circuitrinos-VRisingVR`; 1.1.0 wins. The profile config still has the stream experiment's `[Passthrough]` section, which nothing reads any more; it can be deleted.
+- **Next (the user's idea):** detect the keyboard, mouse and hands and key only those (e.g. a mask instead of a rectangle).
 
 ## Roadmap
 1. ~~Stereo world view in the headset with head tracking~~ (v0.1, untested on hardware)
@@ -253,4 +300,4 @@ The user asked to see their keyboard and mouse while playing. SteamVR gives stre
 5. An in-game settings panel in the Options menu (currently BepInEx config + hotkeys)
 6. ~~Performance: option to skip desktop rendering and show a mirror of the left eye instead~~ (v0.10, `View.DesktopMirror`)
 7. ~~Release packaging~~ (1.0.0): `dotnet build -c Release` writes the Thunderstore and manual zips to `dist\` (see Release packaging). Published on Thunderstore as Circuitrinos-VRisingVR (1.0.2, 2026-10-22).
-8. Passthrough on the Steam Frame (1.1.0, in development; blocked: no real camera source yet, see Passthrough): the camera view while looking down or after F3. Next: show only the keyboard, mouse and hands, with an opacity setting.
+8. VRisingVR Passthrough (1.1.0, in development on the `passthrough` branch): a chroma-key window onto the desk for the Steam Frame (see Passthrough). Next: key only the keyboard, mouse and hands.

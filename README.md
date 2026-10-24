@@ -1,7 +1,10 @@
-# VRisingVR
+# VRisingVR Passthrough
 
-Play V Rising in VR like a 3D board game. The game's own top-down camera is shown in stereo 3D in your headset, so the world sits in front of you like a living tabletop. You can lean in and look around it with your head, and the game's camera rotation and zoom still work. You keep playing with mouse and keyboard as usual.
+Play V Rising in VR like a 3D board game, and see your real keyboard and mouse whenever you need them. This is the passthrough edition of [VRisingVR](https://thunderstore.io/c/v-rising/p/Circuitrinos/VRisingVR/) for the **Steam Frame**: the same mod, plus a window onto your desk. Hold your mouse's rear side button (or **G**) and a window opens in the game where your keyboard and mouse are, showing them and your hands through the headset's passthrough. It needs a community tool on the headset (see "Seeing your desk"). Without a Steam Frame, or if you play with a gamepad, install VRisingVR instead.
 
+The game's own top-down camera is shown in stereo 3D in your headset, so the world sits in front of you like a living tabletop. You can lean in and look around it with your head, and the game's camera rotation and zoom still work. You keep playing with mouse and keyboard as usual.
+
+- Hold your mouse's rear side button (or G) to see your desk through a window in the game (Steam Frame).
 - The game's HUD, menus and map float in front of you as a transparent layer.
 - Health bars, names and levels hang over the characters in 3D.
 - The aim cursor lies on the ground in 3D, exactly where your attacks go.
@@ -14,11 +17,14 @@ The mod is client-side only. It doesn't change anything on the server, so there'
 - V Rising 1.1.13 on Windows (Steam), running on Direct3D 11, the game's default
 - [BepInExPack_V_Rising](https://thunderstore.io/c/v-rising/p/BepInEx/BepInExPack_V_Rising/) 1.733.2 (mod managers install it for you)
 - SteamVR and a headset that works with it. Tested with a Steam Frame streaming wirelessly through Steam Link.
+- For the desk window: a Steam Frame, streaming from your PC through SteamVR, with the community chroma-key tool installed on it (see "Seeing your desk"). On other headsets the rest of the mod works, but the window is just a green rectangle.
 - A strong graphics card: the game renders the world once per eye, by default at SteamVR's full recommended resolution. On an RTX 2070 that runs at roughly 25-45 fps depending on the scene, and `View.RenderScale` 0.7 gets roughly 40-60.
 
 ## Installing
 
 You don't need the source code or any developer tools, only the mod itself. VRisingVR runs on BepInEx, the mod loader most V Rising mods use, and a mod manager installs that for you.
+
+**It replaces VRisingVR.** If you have VRisingVR installed, uninstall it first, or turn it off in **My mods**. Both are the same plugin, so if both are installed BepInEx runs only the one with the higher version number. They share the settings file, so your view settings carry over.
 
 ### With a mod manager (recommended)
 
@@ -37,7 +43,7 @@ Both are built on the same code, but a few buttons have different names. This gu
 | Edit config | Config editor | Change mod settings |
 
 1. Open the mod manager. Search for **V Rising** and click **Select game**. Then click the **Default** profile and **Select profile** (r2modman: **Select**).
-2. Click **Get mods** and search for **VRisingVR**. Click the mod, click **Download**, then **Download with dependencies**. This installs BepInExPack_V_Rising as well.
+2. Click **Get mods** and search for **VRisingVR Passthrough**. Click the mod, click **Download**, then **Download with dependencies**. This installs BepInExPack_V_Rising as well.
 3. Click **Modded** to start the game. The first start needs an internet connection and takes a few minutes while BepInEx prepares the game, and a BepInEx console window opens beside it. Later starts are quick.
 
 Always start the game with **Modded**. Starting it from Steam runs the game without mods.
@@ -48,8 +54,8 @@ You can also install from the mod's page on Thunderstore: with the mod manager o
 
 1. Install **BepInExPack_V_Rising** from **Get mods** first. Imported mods don't bring their dependencies with them.
 2. Go to **Settings > Profile > Import local mod**, click **Import local mod**, then **Select file**.
-3. Pick the zip exactly as you downloaded it, named like `Circuitrinos-VRisingVR-1.0.2.zip`. Don't rename or unzip it: the mod manager reads the author from the file name, a folder can't be imported, and a zip you make yourself won't work.
-4. Check that the dialog shows VRisingVR, Circuitrinos and the mod's version number. If it says 0.0.0, it's the wrong file. Click **Import local mod**.
+3. Pick the zip exactly as you downloaded it, named like `Circuitrinos-VRisingVR_Passthrough-1.1.0.zip`. Don't rename or unzip it: the mod manager reads the author from the file name, a folder can't be imported, and a zip you make yourself won't work.
+4. Check that the dialog shows VRisingVR_Passthrough, Circuitrinos and the mod's version number. If it says 0.0.0, it's the wrong file. Click **Import local mod**.
 
 To update, import the new version's zip the same way; it replaces the old one.
 
@@ -58,7 +64,7 @@ To update, import the new version's zip the same way; it replaces the old one.
 1. Find your game folder: in Steam, right-click V Rising and choose **Manage > Browse local files**. It's the folder with `VRising.exe` in it.
 2. Install BepInEx. Download [BepInExPack_V_Rising](https://thunderstore.io/c/v-rising/p/BepInEx/BepInExPack_V_Rising/) with the **Download** button and extract it into a temporary folder, not the game folder. Then move everything inside its `BepInExPack_V_Rising` folder into the game folder.
 3. Start the game once and quit. A BepInEx console window should open, and this first start takes a few minutes.
-4. In the game folder, open `BepInEx\plugins`, create a folder named `VRisingVR`, and extract the mod's zip into it. `VRisingVR.dll` and `openvr_api.dll` must end up together in `BepInEx\plugins\VRisingVR`. (If you have `VRisingVR-<version>-manual.zip`, extract that straight into the game folder instead.)
+4. In the game folder, open `BepInEx\plugins`, create a folder named `VRisingVR`, and extract the mod's zip into it. `VRisingVR.dll` and `openvr_api.dll` must end up together in `BepInEx\plugins\VRisingVR`, replacing VRisingVR's if you had it. (If you have `VRisingVR_Passthrough-<version>-manual.zip`, extract that straight into the game folder instead.)
 
 The game now loads the mod whenever it starts, including from Steam.
 
@@ -79,12 +85,12 @@ Start the game with your headset connected (with **Modded** if you use a mod man
 - **Health bars and names:** each character's overhead bars, name, level and icons float above them in 3D, looking exactly like the game's own. The interact prompt and the combat numbers stay on the HUD layer.
 - **Desktop window:** while you're in VR, the window on your monitor shows your left eye, which saves a whole render each frame. Turn `View.DesktopMirror` off to see the normal game view there instead.
 
-Hotkeys only work while the game window has focus. A short message in the headset confirms each one.
+Hotkeys only work while the game window has focus. Most of them confirm with a short message in the headset.
 
 | Key | Action |
 | --- | --- |
-| F3 | Steam Frame passthrough: keep the camera view on, or go back to showing it only while you look down (see "Passthrough on the Steam Frame") |
-| F4 | Open/close the VR settings panel: HUD distance, width, tilt and ground margin, cursor and health bar size, world scale, near clip, stereo strength, view height, menu screen distance |
+| Rear mouse side button, or G | Hold to see your desk (see "Seeing your desk"). The F4 panel changes the key and places the window. |
+| F4 | Open/close the VR settings panel: HUD distance, width, tilt and ground margin, cursor and health bar size, world scale, near clip, stereo strength, view height, menu screen distance, and the desk window's key, position and size |
 | F7 | Show/hide the virtual screen while in the world |
 | F8 | Stop/start VR |
 | F9 | Re-center your view |
@@ -103,6 +109,7 @@ The F4 panel covers the settings you'll want to adjust while playing. All of the
 - `HUD.Distance` and `HUD.Width`: where the HUD layer floats and how big it is.
 - `Bars.Enabled` and `Bars.WidthMeters`: the 3D health bars and their size.
 - `Cursor.GroundCursorSize` and `Cursor.GroundCursorHiddenAlpha`: the ground cursor's size, and how strongly it shows through things in front of it.
+- `DeskWindow.Mode` and `DeskWindow.KeyColor`: when the desk window shows, and its colour (see "Seeing your desk").
 
 ## Performance tips
 
@@ -111,32 +118,54 @@ The F4 panel covers the settings you'll want to adjust while playing. All of the
 - Keep the game's resolution at your monitor's. The VR HUD is drawn at the window's resolution, so lowering it only blurs the HUD.
 - Close other programs that use the graphics card.
 
-## Passthrough on the Steam Frame (optional)
+## Seeing your desk (Steam Frame)
 
-On a Steam Frame, VRisingVR can show the headset's camera view while you look down at your desk, so you can see your keyboard, mouse and hands. Press **F3** to keep it on. This is an advanced, optional feature: SteamVR doesn't give PC games access to the Frame's cameras, so a small server you install on the headset sends the camera view to the mod over your network. It was tested with the Arcturus color camera attached; without it, it's untested.
+SteamVR doesn't let PC games use the Steam Frame's cameras. Instead, the mod draws a pure green rectangle into the picture, lying where your keyboard and mouse are. A community tool on the headset, [steam-frame-chroma-key](https://github.com/spyjacob/steam-frame-chroma-key), then shows the headset's own passthrough wherever the picture is that green. So the rectangle becomes a window onto your desk, with your real keyboard, mouse and hands in it. The camera image never leaves the headset.
 
-**Setting it up:**
+**Setting up the headset (once).** The tool is unofficial and not part of this mod; its README has the details.
 
-1. On the headset, turn on Developer Mode (**Steam Settings > System > Enable Developer Mode**) and set a password.
-2. Download this mod's source from [GitHub](https://github.com/Circuitrinos/v_rising_vr_mod) (**Code > Download ZIP**) and extract it. You only need its `headset` folder.
-3. On your PC, open PowerShell in the extracted folder and install the server. Each command asks for the headset password:
+1. On the headset, turn on Developer Mode (**Steam Settings > System > Enable Developer Mode**), set a password under **Developer > Set User Password**, and note the headset's IP address from its Wi-Fi settings.
+2. On your PC, open PowerShell and log in to the headset with `ssh steamos@<headset-ip>`.
+3. Build and install the tool. The `git checkout` line picks the version this edition was tested with (October 2026, SteamOS 0.4.5 build 20261007); leave it out to use the newest.
    ```
-   scp -r headset steamos@frame:/tmp/vrisingvr-headset
-   ssh steamos@frame "bash /tmp/vrisingvr-headset/install.sh"
-   ssh steamos@frame "cat ~/.config/vrisingvr-passthrough/token"
+   git clone https://github.com/spyjacob/steam-frame-chroma-key.git ~/mr-chroma
+   cd ~/mr-chroma
+   git checkout 535c5f224768f85d7f011fce9e1cf03e0ea802f8
+   ./build.sh && ./install.sh
+   touch ~/.config/mrchroma/enable-compositor
+   ~/.local/share/mrchroma/mrctl set-bool camera forceSceneAlphaBlending 1
+   systemctl --user restart steamvr
    ```
-   The last command prints the server's secret token. It keeps others on your network out of the camera, so don't share it.
-4. In the mod's settings file (`vrisingvr.tabletop.cfg`, see Settings above), set `Enabled = true` and paste the token after `Token = ` in the `[Passthrough]` section. The section appears after the first start with 1.1.0 or later.
+4. Put the headset on so SteamVR wakes up, start streaming from your PC, and log in again. Then set the key and install the tool's panel for the SteamVR dashboard:
+   ```
+   cd ~/mr-chroma
+   ./mrkey.sh chroma 0 1 0 0.12 0.06 0.5
+   toggle/install_toggle.sh
+   ```
+   The `0.12` and `0.06` are a tighter key than the tool suggests: only colours very close to pure green become passthrough. With its looser default, bright greens in the game, such as sunlit grass or green spell effects, would show your room too. You can change both later with the **Chroma Key** panel's **Similarity** and **Edge softness** sliders in the SteamVR dashboard.
 
-The server starts with the headset and only uses the camera while the mod is connected. To check it works without the game, open `http://frame.local:47816` in a browser and enter the token: the page shows the camera view live, and the token ready to copy. The picture only updates while you wear the headset. When it's off your head, SteamVR's standby pauses the cameras, and the page says "Paused".
+You don't need the tool's PC programs. After a SteamOS update on the headset, turn keying off in the panel and run the `mrkey.sh` line again; if it reports "unexpected shader layout", leave keying off until the tool is updated. To remove the tool, run `./uninstall.sh` in `~/mr-chroma` while SteamVR is running.
 
-**Adjusting it** (F4 panel, while passthrough is enabled):
+**Using it.** Hold your mouse's rear side button, or **G**, and look at your desk. The HUD steps aside while you hold it. The window lies flat on the desk, at first 45 cm in front of and below where your eyes were when you last re-centered (F9, and whenever you put the headset on). To line it up with your keyboard and mouse, open the **F4** panel; the window stays visible while it's open.
 
-- **Look-down angle:** how far below the horizon you look before the camera view appears (default 45°). Keep it steeper than where you look at the board.
-- **Opacity.**
-- **Field of view** and the **vertical** and **horizontal offsets:** line the camera view up with your real desk. Touch a key and move until your hand shows where it really is.
+- Click **Place the desk window where you face**, then point your face, not just your eyes, at the middle of your keyboard and mouse. After 3 seconds the window moves there. From then on it stays put when you re-center or take the headset off, until VR restarts.
+- Or adjust **Desk window ahead** and **right**, **Desk below your eyes** (your desk's height under your eyes), and the window's **width** and **depth**. The panel covers the middle of the window in the world; in the main menu it's out of the way.
 
-Leaving Developer Mode on keeps SSH open to your network; turn it off when you don't need it. To remove the server, run `ssh steamos@frame "systemctl --user disable --now vrisingvr-passthrough"` and delete `~/.local/share/vrisingvr-passthrough` and `~/.config/vrisingvr-passthrough` on the headset.
+The window also works in menus and loading screens. On your monitor it shows as a green rectangle.
+
+**Why hold a key?** In the tabletop view your character is in about the same direction as your keyboard, so a window that opened by itself whenever you looked down would cover the board while you play. `DeskWindow.Mode` changes this:
+
+- **Hold** (default): while you hold the key.
+- **Toggle**: the key turns it on and off.
+- **LookDown**: while your head points further down than `DeskWindow.LookDownAngle` (50° below the horizon by default). The key turns this off and on. It only works if you tilt your head further down for your keyboard than for your character; the log's `Perf:` line shows where your head points with the window hidden and shown.
+- **Always**: all the time. The key turns it off and on.
+- **Off**.
+
+The window is green by default. If you pick another colour in the headset's Chroma Key panel, set `DeskWindow.KeyColor` to the same one (Green, Blue, Magenta, Red or Cyan).
+
+**The key.** By default your mouse's rear side button (`MouseBack`) or **G** shows the window. The side button is the easiest to hold while you move, since your left hand stays on WASD. V Rising also uses that button, as the second binding of **Interrupt Ability Cast** (the game calls it Mouse 3), so clear it once: in the game's settings, open the key bindings, click that action's second binding and press Backspace. Its main key stays. Don't use the front side button, which the game uses for Auto Run. G is a keyboard key V Rising doesn't use, next to F.
+
+To pick another key, open the **F4** panel, click the **Desk window key** row at the top and press the key or mouse button (Esc cancels). It replaces both defaults. It's saved as `DeskWindow.Key`, which can also list several keys separated by commas.
 
 ## Known limitations
 
@@ -144,6 +173,8 @@ Leaving Developer Mode on keeps SSH open to your network; turn it off when you d
 - Where two characters' bars overlap on screen, they're drawn in plain colours instead of the game's own graphics.
 - No motion controller support. The headset is your view; you play with mouse and keyboard.
 - Built for V Rising 1.1.13. A game update can break it until the mod is updated.
+- The desk window depends on the unofficial chroma-key tool, which reaches into SteamVR's internals on the headset. A SteamOS update can stop it working until the tool is updated.
+- Anything in the game close enough to the key colour also shows your room. With the tighter key above this is rare.
 
 ## Troubleshooting
 
@@ -158,6 +189,9 @@ Common problems:
 - **The BepInEx console shows `System.AccessViolationException`:** your antivirus is probably blocking BepInEx. Allow it in your security software.
 - **Nothing in the headset:** make sure SteamVR is installed and sees your headset, then press F8 in the game. The log says why VR didn't start (look for lines with `VRisingVR`).
 - **Low frame rate:** see the performance tips above. The log prints a `Perf:` line every 5 seconds with the frame rate and GPU time.
+- **The desk window is a green rectangle:** the headset isn't keying it. Check that the **Chroma Key** panel in the SteamVR dashboard says ON and that its colour matches `DeskWindow.KeyColor`. If the panel is missing, set the tool up again (see "Seeing your desk").
+- **Patches of the game show your room:** lower **Similarity** in the headset's Chroma Key panel.
+- **The window is in the wrong place:** press F9 while sitting normally, then use the F4 panel's **Place the desk window where you face** button.
 - **Something looks wrong:** press F5 for a 3D capture and include it, along with the log, when you report the problem (see below).
 
 ## Feedback and bug reports
@@ -166,7 +200,7 @@ Report bugs and suggest improvements on [GitHub Issues](https://github.com/Circu
 
 ## Building from source
 
-The source code is on [GitHub](https://github.com/Circuitrinos/v_rising_vr_mod). You need the .NET SDK (6 or newer) and the game with BepInExPack_V_Rising installed and started once, so that `BepInEx\interop` exists.
+The source code is on [GitHub](https://github.com/Circuitrinos/v_rising_vr_mod). This edition is on the `passthrough` branch; VRisingVR is `main`. You need the .NET SDK (6 or newer) and the game with BepInExPack_V_Rising installed and started once, so that `BepInEx\interop` exists.
 
 ```
 cd VRisingVR
@@ -175,8 +209,8 @@ dotnet build -c Release
 
 The build copies `VRisingVR.dll` and `openvr_api.dll` into `<GameDir>\BepInEx\plugins\VRisingVR\` and writes the release zips to `dist\`:
 
-- `Circuitrinos-VRisingVR-<version>.zip` is the Thunderstore package. It also works with r2modman's **Import local mod**.
-- `VRisingVR-<version>-manual.zip` is for installing by hand.
+- `Circuitrinos-VRisingVR_Passthrough-<version>.zip` is the Thunderstore package. It also works with r2modman's **Import local mod**.
+- `VRisingVR_Passthrough-<version>-manual.zip` is for installing by hand.
 
 Options:
 
@@ -191,7 +225,7 @@ Options:
 1. Raise `<Version>` in `VRisingVR/VRisingVR.csproj` (Major.Minor.Patch). The plugin, the manifest and the zip names all use it.
 2. Add a section to `CHANGELOG.md`.
 3. Build.
-4. Upload `dist\Circuitrinos-VRisingVR-<version>.zip` at <https://thunderstore.io/package/create/>. Choose the team named in `ThunderstoreTeam` and the V Rising community, then pick the **Client** and **Oakveil Update** categories, plus **AI Generated** if the community has one. Set **Contains NSFW content** to No.
+4. Upload `dist\Circuitrinos-VRisingVR_Passthrough-<version>.zip` at <https://thunderstore.io/package/create/>. Choose the team named in `ThunderstoreTeam` and the V Rising community, then pick the **Client** and **Oakveil Update** categories, plus **AI Generated** if the community has one. Set **Contains NSFW content** to No.
 
 Keep the AI disclosure section below and the `AssemblyMetadata` entries in the csproj. Thunderstore requires both for mods made with AI.
 
@@ -199,7 +233,7 @@ Thunderstore uploads can't be edited afterwards, so every change needs a new ver
 
 ## AI disclosure
 
-VRisingVR was made with generative AI. Its code, documentation and icon were created by Claude, Anthropic's AI model, working in Claude Code. Circuitrinos directed the work and play-tested the mod in VR on real hardware. The plugin also records this in its assembly metadata (`AI_Assisted_Creation` and `AI_Model_Vendor`).
+VRisingVR and this passthrough edition were made with generative AI. Their code, documentation and icons were created by Claude, Anthropic's AI model, working in Claude Code. Circuitrinos directed the work and play-tested the mod in VR on real hardware. The plugin also records this in its assembly metadata (`AI_Assisted_Creation` and `AI_Model_Vendor`).
 
 ## License
 

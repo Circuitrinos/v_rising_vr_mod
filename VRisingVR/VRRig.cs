@@ -63,7 +63,9 @@ public class VRRig : MonoBehaviour
     private readonly GameHud _gameHud = new();
     private readonly WorldBars _bars = new();
     private readonly DesktopMirror _mirror = new();
-    private readonly PassthroughPanel _passthrough = new();
+    // The key-coloured window onto your desk, drawn into the eye images last (after the bars and the cursor).
+    private readonly DeskWindow _desk = new();
+    private bool _deskKeyHeld;
     // The health bars and the ground cursor, drawn into the eye images after they render (DrawEyeOverlays).
     private bool _barsWanted;
     private bool _reticleWanted;
@@ -192,8 +194,10 @@ public class VRRig : MonoBehaviour
             if (_eyesDoneMask == 3)
             {
                 // HDRP has submitted both eyes' work (it submits the context before this callback), so the
-                // ground cursor and the health bars go into the finished images before they're handed over.
+                // ground cursor and the health bars go into the finished images before they're handed over,
+                // then the desk window on top of everything.
                 DrawEyeOverlays(context, haveContext: true);
+                _desk.Render(context, haveContext: true, _textures, _hmd, _submitPose);
                 // Both eyes are drawn: hand them to SteamVR now instead of at the end of the frame, which would
                 // add the desktop camera's and UI's GPU time to every VR frame's latency.
                 QueueEyeSubmit();
@@ -292,6 +296,8 @@ public class VRRig : MonoBehaviour
         {
             if (_eyesActive)
                 DrawEyeOverlays(default, haveContext: false);
+            // Also into the menus' black frames, so you can see your keyboard there too.
+            _desk.Render(default, haveContext: false, _textures, _hmd, _submitPose);
             QueueEyeSubmit();
         }
 
@@ -349,6 +355,7 @@ public class VRRig : MonoBehaviour
             sb.AppendLine($"eye {i} camera pos {et.position}, euler {et.eulerAngles}, fov {_eyes[i].fieldOfView:F2}, aspect {_eyes[i].aspect:F4}, " +
                           $"proj m00 {m.m00:F4} m02 {m.m02:F4} m11 {m.m11:F4} m12 {m.m12:F4} m22 {m.m22:F4} m23 {m.m23:F4} m32 {m.m32:F4}");
         }
+        sb.AppendLine(_desk.CaptureInfo());
         sb.AppendLine($"desktop png: the game camera's own render (desktop mirror {(Settings.DesktopMirror.Value ? "paused for the capture" : "off")})");
         sb.AppendLine("note: all PNGs are upright, as the headset shows them (before SteamVR's lens warp and reprojection; the HUD PNG is a separate overlay). " +
                       "Each eye's straight-ahead direction is at column (1 - m02)/2*width from the left and row (1 + m12)/2*height from the top.");
@@ -361,6 +368,15 @@ public class VRRig : MonoBehaviour
             _settingsPanel.Toggle();
         _settingsPanel.Tick();
         _toast.Tick();
+        // The panel's "place where you face" countdown ended: the desk window goes where the head points now.
+        if (_settingsPanel.TakePlaceRequest())
+        {
+            string placed = _state == State.Running && _haveRecenterPose
+                ? _desk.PlaceAtGaze(_renderedPose, _recenterPose)
+                : $"Start VR ({Settings.ToggleKey.Value}) before placing the desk window";
+            Plugin.Logger.LogInfo(placed);
+            _settingsPanel.ShowPlaceResult(placed);
+        }
 
         // Poll every key each frame so edge detection stays current.
         bool toggle = Hotkeys.Pressed(Settings.ToggleKey.Value);
@@ -370,7 +386,8 @@ public class VRRig : MonoBehaviour
         bool screenToggle = Hotkeys.Pressed(Settings.ScreenToggleKey.Value);
         bool isolate = Hotkeys.Pressed(Settings.IsolationKey.Value);
         bool capture = Hotkeys.Pressed(Settings.CaptureKey.Value);
-        bool passthroughToggle = Hotkeys.Pressed(Settings.PassthroughKey.Value);
+        bool deskKey = Hotkeys.Pressed(Settings.DeskKey.Value);
+        _deskKeyHeld = Hotkeys.IsDown(Settings.DeskKey.Value);
 
         if (toggle)
         {
@@ -392,8 +409,11 @@ public class VRRig : MonoBehaviour
             _toast.Show("Recentered");
         }
 
-        if (passthroughToggle)
-            _toast.Show(_passthrough.TogglePinned());
+        if (deskKey && _desk.OnKeyPressed() is string deskMessage)
+        {
+            Plugin.Logger.LogInfo(deskMessage);
+            _toast.Show(deskMessage);
+        }
 
         if (capture)
         {
@@ -460,6 +480,11 @@ public class VRRig : MonoBehaviour
 
         bool havePose = UpdateHeadPose(out Vector3 headPos, out Quaternion headRot);
         EnforceFramePacing(havePose);
+        // The desk window was drawn into the eye images, so the menus' black frames need clearing again, even if
+        // this frame returns early (no pose) and they're only submitted later.
+        if (_desk.TakeDrawn())
+            _eyesCleared = false;
+        _desk.Update(havePose && _haveRecenterPose, _renderedPose, _recenterPose, _deskKeyHeld, _settingsPanel.Visible, inWorld);
 
         if (SubmitBridge.TakePendingError() is { } renderThreadError)
             Plugin.Logger.LogError(renderThreadError);
@@ -470,9 +495,13 @@ public class VRRig : MonoBehaviour
         _screen.Tick(screenWanted, follow: !inWorld, havePose, _renderedPose);
         // In the world, the UI-only layer is the normal way to see the HUD and menus; the full mirror
         // (F7) replaces it rather than stacking on top of it.
-        _hud.Tick(inWorld && Settings.HudEnabled.Value && !screenWanted, inWorld ? ComputeHudAnchor(game) : default);
+        // While you hold the key to peek at your desk, the HUD would cover the window, so it steps aside (not while
+        // the settings panel is open: the panel is on the HUD).
+        bool deskPeek = _desk.Visible && Settings.DeskMode.Value == DeskWindowMode.Hold && !_settingsPanel.Visible;
+        HudAnchor anchor = inWorld ? ComputeHudAnchor(game) : default;
+        _hud.Tick(inWorld && Settings.HudEnabled.Value && !screenWanted && !deskPeek, anchor);
+        _desk.NoteBoard(anchor);
         UpdateCursors(inWorld);
-        _passthrough.Tick(havePose, _renderedPose);
 
         if (!havePose)
         {
@@ -485,7 +514,7 @@ public class VRRig : MonoBehaviour
         {
             _mirror.Tick(false, null, null, null);
             // Nothing 3D to show: skip the two expensive HDRP eye renders, but keep SteamVR fed with
-            // black frames so it keeps pacing us and doesn't time out.
+            // black frames so it keeps pacing us and doesn't time out (cleared again after the desk window was drawn).
             SetEyesEnabled(false);
             ClearEyesToBlack();
             _submitPose = _renderedPose;
@@ -732,6 +761,10 @@ public class VRRig : MonoBehaviour
                     break;
                 case EVREventType.VREvent_ChaperoneUniverseHasChanged:
                 case EVREventType.VREvent_StandingZeroPoseReset:
+                    // The room's tracking space moved, so a placed desk window would no longer be on the desk.
+                    _desk.ForgetPlacement();
+                    Recenter("SteamVR recentered");
+                    break;
                 case EVREventType.VREvent_SeatedZeroPoseReset:
                     Recenter("SteamVR recentered");
                     break;
@@ -828,6 +861,7 @@ public class VRRig : MonoBehaviour
         _state = State.Running;
         Plugin.Logger.LogInfo($"VR started: {width}x{height} per eye (RenderScale {Settings.RenderScale.Value}).");
         LogHeadsetGeometry();
+        Plugin.Logger.LogInfo(DeskWindow.Describe());
     }
 
     private void CreateEyeTextures()
@@ -954,7 +988,7 @@ public class VRRig : MonoBehaviour
         _bars.Destroy();
         _gameHud.Reset();
         _mirror.Destroy();
-        _passthrough.Destroy();
+        _desk.Destroy();
         _overlayCommands?.Release();
         _overlayCommands = null;
         RestoreFramePacing();
@@ -1189,7 +1223,7 @@ public class VRRig : MonoBehaviour
             $" | poses paired={pairing.paired} stale={pairing.stale} other={pairing.other} syncs={_poseFlushes}" +
             $" ({(_poseFromCompositor ? "compositor" : "predicted")})" +
             (_gameHud.TakeStats() is string hudStats ? $" | {hudStats}" : "") +
-            (_passthrough.TakeStats() is string passthroughStats ? $" | {passthroughStats}" : ""));
+            (_desk.TakeStats() is string deskStats ? $" | {deskStats}" : ""));
         _poseFlushes = 0;
 
         _lastStats = now;

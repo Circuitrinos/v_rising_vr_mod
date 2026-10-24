@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using BepInEx.Configuration;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace VRisingVR;
@@ -32,8 +34,35 @@ internal sealed class VrSettingsPanel
     private bool _failed;
     private float _saveAt = -1f;
     private bool _saveHooked;
+    // The desk window key's row: a button that, once clicked, takes the next key or mouse button pressed.
+    private Text _keyText;
+    private bool _capturing;
+    private string _keyMessage;
+    private float _keyMessageUntil;
+    // The place row: a button that, after a countdown to face the keyboard, asks the rig to place the desk window.
+    private const float PlaceCountdown = 3f;
+    private Text _placeText;
+    private float _placeAt = -1f;
+    private bool _placeRequested;
+    private string _placeMessage;
+    private float _placeMessageUntil;
 
     public bool Visible => _visible;
+
+    /// <summary>True once when the place countdown has ended; the caller places the window and reports with <see cref="ShowPlaceResult"/>.</summary>
+    public bool TakePlaceRequest()
+    {
+        bool requested = _placeRequested;
+        _placeRequested = false;
+        return requested;
+    }
+
+    /// <summary>Show how placing the desk window went, on its row.</summary>
+    public void ShowPlaceResult(string message)
+    {
+        _placeMessage = message;
+        _placeMessageUntil = Time.unscaledTime + 5f;
+    }
 
     public void Toggle()
     {
@@ -74,6 +103,8 @@ internal sealed class VrSettingsPanel
                 if (row.Text != null)
                     row.Text.text = $"{row.Label}: {row.Entry.Value.ToString(row.Format)}";
             }
+            TickKeyRow();
+            TickPlaceRow();
 
             // Edits are saved shortly after they stop, so nothing is lost if the game exits with the panel open.
             if (_saveAt >= 0f && Time.unscaledTime >= _saveAt)
@@ -114,6 +145,8 @@ internal sealed class VrSettingsPanel
         if (_root != null)
             _root.SetActive(false);
         _visible = false;
+        _capturing = false;
+        _placeAt = -1f;
         _saveAt = -1f;
         Settings.File.Save();
         Settings.File.SaveOnConfigSet = true;
@@ -159,6 +192,11 @@ internal sealed class VrSettingsPanel
         Canvas canvas = _root.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = short.MaxValue - 1; // above the game UI, below the VR cursor
+        // Sizes below are in 1080p pixels; scaled to the window's height, the panel (nearly 1080 tall) always fits.
+        CanvasScaler scaler = _root.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 1f;
         _root.AddComponent<GraphicRaycaster>();
 
         var rows = new List<(ConfigEntry<float> entry, string label, float min, float max, string format)>
@@ -174,21 +212,21 @@ internal sealed class VrSettingsPanel
             (Settings.StereoStrength, "Stereo strength", 0f, 1.5f, "0.00"),
             (Settings.HeightOffset, "View height (game m)", -20f, 20f, "0.0"),
             (Settings.ScreenDistance, "Menu screen distance (m)", 1f, 5f, "0.0"),
+            // The window onto your desk shows while this panel is open, so these can line it up with the keyboard.
+            (Settings.DeskForward, "Desk window ahead (m)", 0.1f, 1.5f, "0.00"),
+            (Settings.DeskRight, "Desk window right (m)", -1f, 1f, "0.00"),
+            (Settings.DeskBelowEyes, "Desk below your eyes (m)", 0.1f, 1.2f, "0.00"),
+            (Settings.DeskWidth, "Desk window width (m)", 0.2f, 2f, "0.00"),
+            (Settings.DeskDepth, "Desk window depth (m)", 0.1f, 1f, "0.00"),
+            (Settings.DeskLookDownAngle, "Desk look-down (degrees)", 10f, 85f, "0"),
         };
-        // Only for players who set up the Steam Frame passthrough server.
-        if (Settings.PassthroughEnabled.Value)
-        {
-            rows.Add((Settings.PassthroughOpacity, "Passthrough opacity", 0.1f, 1f, "0.00"));
-            rows.Add((Settings.PassthroughLookDownAngle, "Passthrough look-down angle (degrees)", 10f, 85f, "0"));
-            rows.Add((Settings.PassthroughFieldOfView, "Passthrough field of view (degrees)", 40f, 160f, "0"));
-            rows.Add((Settings.PassthroughVerticalOffset, "Passthrough vertical offset (degrees)", -45f, 45f, "0.0"));
-            rows.Add((Settings.PassthroughHorizontalOffset, "Passthrough horizontal offset (degrees)", -45f, 45f, "0.0"));
-        }
 
         const float width = 680f;
-        // Shorter rows when there are many, so the panel still fits a 1080p screen.
-        float rowHeight = rows.Count > 12 ? 54f : 64f;
-        float height = 90f + rows.Count * rowHeight + 20f;
+        // The desk window's two button rows first, then the sliders, short enough that the panel fits 1080 (scaled) pixels.
+        const int buttonRows = 2;
+        int rowCount = rows.Count + buttonRows;
+        float rowHeight = Mathf.Min(64f, 950f / rowCount);
+        float height = 90f + rowCount * rowHeight + 20f;
 
         RectTransform panel = CreateRect("Panel", _root.transform, new Vector2(width, height));
         Image background = panel.gameObject.AddComponent<Image>();
@@ -196,11 +234,19 @@ internal sealed class VrSettingsPanel
 
         CreateText(panel, $"VR settings  ({Settings.SettingsKey.Value} closes)", new Vector2(0f, height / 2f - 40f),
             new Vector2(width - 40f, 44f), 26);
+        float firstRowY = height / 2f - 90f - rowHeight / 2f;
+        if (!CreateButtonRow(panel, firstRowY, width - 40f, rowHeight - 12f, StartCapture, out _keyText))
+        {
+            ShowKeyMessage("Change the desk window key in the config file (DeskWindow.Key)");
+            _keyMessageUntil = float.MaxValue;
+        }
+        if (!CreateButtonRow(panel, firstRowY - rowHeight, width - 40f, rowHeight - 12f, StartPlaceCountdown, out _placeText))
+            ShowPlaceResult("Line the desk window up with the sliders below");
 
         for (int i = 0; i < rows.Count; i++)
         {
             var row = rows[i];
-            float y = height / 2f - 90f - i * rowHeight - rowHeight / 2f;
+            float y = firstRowY - (i + buttonRows) * rowHeight;
             Text label = CreateText(panel, row.label, new Vector2(-width / 4f + 10f, y), new Vector2(width / 2f - 20f, rowHeight), 20);
 
             GameObject sliderObject = DefaultControls.CreateSlider(new DefaultControls.Resources());
@@ -218,6 +264,116 @@ internal sealed class VrSettingsPanel
         }
 
         _root.SetActive(false);
+    }
+
+    /// <summary>
+    /// A full-width button with a text label. Returns false if the click can't be hooked up (the label still shows),
+    /// so the rest of the panel keeps working.
+    /// </summary>
+    private bool CreateButtonRow(RectTransform panel, float y, float width, float height, Action onClick, out Text label)
+    {
+        GameObject buttonObject = DefaultControls.CreateButton(new DefaultControls.Resources());
+        buttonObject.transform.SetParent(panel, false);
+        RectTransform rect = buttonObject.GetComponent<RectTransform>();
+        rect.anchoredPosition = new Vector2(0f, y);
+        rect.sizeDelta = new Vector2(width, height);
+        buttonObject.GetComponent<Image>().color = new Color(0.2f, 0.22f, 0.3f, 1f);
+        label = buttonObject.GetComponentInChildren<Text>();
+        if (_font != null)
+            label.font = _font;
+        label.fontSize = 20;
+        label.color = Color.white;
+        try
+        {
+            buttonObject.GetComponent<Button>().onClick.AddListener((UnityAction)onClick);
+            return true;
+        }
+        catch (Exception e)
+        {
+            Plugin.Logger.LogWarning($"A VR settings panel button doesn't respond to clicks ({e.Message}).");
+            return false;
+        }
+    }
+
+    private void StartPlaceCountdown() => _placeAt = Time.unscaledTime + PlaceCountdown;
+
+    private void TickPlaceRow()
+    {
+        if (_placeText == null)
+            return;
+        if (_placeAt >= 0f)
+        {
+            float left = _placeAt - Time.unscaledTime;
+            if (left > 0f)
+            {
+                _placeText.text = $"Point your face at your keyboard and mouse...  {Mathf.CeilToInt(left)}";
+                return;
+            }
+            _placeAt = -1f;
+            _placeRequested = true;
+        }
+        _placeText.text = Time.unscaledTime < _placeMessageUntil ? _placeMessage
+            : "Place the desk window where you face   (click, then look down)";
+    }
+
+    private void StartCapture()
+    {
+        Hotkeys.BeginCapture();
+        _capturing = true;
+    }
+
+    private void TickKeyRow()
+    {
+        if (_keyText == null)
+            return;
+        if (_capturing)
+        {
+            if (Hotkeys.EscapePressed())
+                _capturing = false;
+            else if (Hotkeys.CapturePress() is string binding)
+                SetDeskKey(binding);
+        }
+        _keyText.text = _capturing ? "Press the new key or mouse button   (Esc cancels)"
+            : Time.unscaledTime < _keyMessageUntil ? _keyMessage
+            : $"Desk window key: {DeskWindow.KeyName}   (click to change)";
+    }
+
+    private void SetDeskKey(string binding)
+    {
+        _capturing = false;
+        string name = Hotkeys.DisplayName(binding);
+        string clash = ModKeyUsing(binding);
+        if (clash != null)
+        {
+            ShowKeyMessage($"{name} is already the mod's {clash} key. Click to try another.");
+            return;
+        }
+        Settings.DeskKey.Value = binding;
+        ShowKeyMessage($"Desk window key: {name}. Check the game doesn't use it.");
+        Plugin.Logger.LogInfo($"Desk window key set to {binding}.");
+    }
+
+    private void ShowKeyMessage(string message)
+    {
+        _keyMessage = message;
+        _keyMessageUntil = Time.unscaledTime + 4f;
+    }
+
+    /// <summary>Which of the mod's own hotkeys the binding would collide with, or null.</summary>
+    private static string ModKeyUsing(string binding)
+    {
+        int vk = Hotkeys.ToVirtualKey(binding);
+        foreach ((ConfigEntry<Key> entry, string what) in new[]
+                 {
+                     (Settings.SettingsKey, "settings panel"), (Settings.ToggleKey, "VR on/off"), (Settings.RecenterKey, "recenter"),
+                     (Settings.ScreenToggleKey, "virtual screen"), (Settings.CaptureKey, "3D capture"),
+                     (Settings.IsolationKey, "diagnostics"), (Settings.ScaleDownKey, "world scale"), (Settings.ScaleUpKey, "world scale"),
+                 })
+        {
+            if (Hotkeys.ToVirtualKey(entry.Value) == vk)
+                return what;
+        }
+        return null;
     }
 
     private static RectTransform CreateRect(string name, Transform parent, Vector2 size)
