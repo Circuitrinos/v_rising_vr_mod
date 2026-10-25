@@ -1,11 +1,13 @@
 # VRisingVR
 
-Play V Rising in VR like a 3D board game. The game's own top-down camera is shown in stereo 3D in your headset, so the world sits in front of you like a living tabletop. You can lean in and look around it with your head, and the game's camera rotation and zoom still work. You keep playing with mouse and keyboard as usual.
+Play V Rising in VR like a 3D board game. The game's own top-down camera is shown in stereo 3D in your headset, so the world sits in front of you like a living tabletop. You can lean in and look around it with your head, and the game's camera rotation and zoom still work. You keep playing as usual, with a gamepad or with mouse and keyboard.
 
 - The game's HUD, menus and map float in front of you as a transparent layer.
 - Health bars, names and levels hang over the characters in 3D.
 - The aim cursor lies on the ground in 3D, exactly where your attacks go.
 - An in-game settings panel (F4) adjusts the view while you play.
+
+**Gamepad or mouse and keyboard?** VRisingVR works well with a gamepad: you never need to see your hands. If you play with mouse and keyboard on a Steam Frame, [VRisingVR Passthrough](https://thunderstore.io/c/v-rising/p/Circuitrinos/VRisingVR_Passthrough/) is the same mod plus a window onto your desk: hold a mouse button and you see your real keyboard, mouse and hands through the headset's passthrough. Install one or the other, not both.
 
 The mod is client-side only. It doesn't change anything on the server, so there's nothing to install there. Stunlock Studios doesn't allow mods on its official servers, so play with it in single player, on your own server, or on a community server that allows client mods.
 
@@ -114,7 +116,7 @@ The F4 panel covers the settings you'll want to adjust while playing. All of the
 
 - The game only makes health bars for characters its normal desktop view would show, so characters at the far edges of the wider VR view have none.
 - Where two characters' bars overlap on screen, they're drawn in plain colours instead of the game's own graphics.
-- No motion controller support. The headset is your view; you play with mouse and keyboard.
+- No motion controller support. The headset is your view; you play with a gamepad or with mouse and keyboard.
 - Built for V Rising 1.1.13. A game update can break it until the mod is updated.
 
 ## Troubleshooting

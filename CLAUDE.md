@@ -220,3 +220,8 @@ After the 22:27 session the user called the mod "effectively perfect" and asked 
 5. An in-game settings panel in the Options menu (currently BepInEx config + hotkeys)
 6. ~~Performance: option to skip desktop rendering and show a mirror of the left eye instead~~ (v0.10, `View.DesktopMirror`)
 7. ~~Release packaging~~ (1.0.0): `dotnet build -c Release` writes the Thunderstore and manual zips to `dist\` (see Release packaging). Published on Thunderstore as Circuitrinos-VRisingVR (1.0.2, 2026-10-22).
+8. **Two editions** (2026-10-24).
+   - `main` is VRisingVR, for gamepad play (the user: "works great with a gamepad") and mouse and keyboard.
+   - The `passthrough` branch is VRisingVR Passthrough: Thunderstore `VRisingVR_Passthrough` 1.1.0, tagged `passthrough-v1.1.0`. It is meant for mouse-and-keyboard play on the Steam Frame and adds a chroma-key window onto the desk; that branch's CLAUDE.md has the details.
+   - Both are the same plugin (GUID `vrisingvr.tabletop`), so the passthrough edition's versions must stay above main's. Its tags are `passthrough-vX.Y.Z`.
+   - main's README links to the passthrough package. The link only works once that package is uploaded.
