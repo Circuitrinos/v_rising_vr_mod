@@ -137,9 +137,14 @@ SteamVR doesn't let PC games use the Steam Frame's cameras. Instead, the mod dra
    ~/.local/share/mrchroma/mrctl set-bool camera forceSceneAlphaBlending 1
    systemctl --user restart steamvr
    ```
-4. Put the headset on so SteamVR wakes up, start streaming from your PC, and log in again. Then set the key and install the tool's panel for the SteamVR dashboard:
+4. Put the headset on so SteamVR wakes up, start streaming from your PC, and log in again. First check that the tool works:
    ```
    cd ~/mr-chroma
+   ./mrkey.sh rect
+   ```
+   In the headset you should now see your room through a rectangle in the middle of each eye. If you don't, the tool isn't loaded: check that every command in step 3 ran without errors, run `systemctl --user restart steamvr`, and try again.
+5. Then set the key and install the tool's panel for the SteamVR dashboard:
+   ```
    ./mrkey.sh chroma 0 1 0 0.12 0.06 0.5
    toggle/install_toggle.sh
    ```
