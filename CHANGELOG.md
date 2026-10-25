@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.4
+
+No changes to the mod itself.
+
+- The README says VRisingVR works well with a gamepad, as well as with mouse and keyboard.
+- It points mouse-and-keyboard players on a Steam Frame to VRisingVR Passthrough, the same mod plus a window onto your desk.
+
 ## 1.0.3
 
 No changes to the mod itself.
