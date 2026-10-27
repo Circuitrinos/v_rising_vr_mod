@@ -7,7 +7,7 @@ Play V Rising in VR like a 3D board game. The game's own top-down camera is show
 - The aim cursor lies on the ground in 3D, exactly where your attacks go.
 - An in-game settings panel (F4) adjusts the view while you play.
 
-**Gamepad or mouse and keyboard?** VRisingVR works well with a gamepad: you never need to see your hands. If you play with mouse and keyboard on a Steam Frame, [VRisingVR Passthrough](https://thunderstore.io/c/v-rising/p/Circuitrinos/VRisingVR_Passthrough/) is the same mod plus a window onto your desk: hold a mouse button and you see your real keyboard, mouse and hands through the headset's passthrough. Install one or the other, not both.
+**Gamepad or mouse and keyboard?** VRisingVR works well with a gamepad: you never need to see your hands. If you play with mouse and keyboard on a Steam Frame, or on a Meta Quest 3 streaming with ALVR, [VRisingVR Passthrough](https://thunderstore.io/c/v-rising/p/Circuitrinos/VRisingVR_Passthrough/) is the same mod plus a window onto your desk: hold a mouse button and you see your real keyboard, mouse and hands through the headset's passthrough. Install one or the other, not both. On a Quest 3 with Virtual Desktop, its own Desk Passthrough may show your desk with plain VRisingVR, but that isn't tested.
 
 The mod is client-side only. It doesn't change anything on the server, so there's nothing to install there. Stunlock Studios doesn't allow mods on its official servers, so play with it in single player, on your own server, or on a community server that allows client mods.
 
@@ -15,7 +15,7 @@ The mod is client-side only. It doesn't change anything on the server, so there'
 
 - V Rising 1.1.13 on Windows (Steam), running on Direct3D 11, the game's default
 - [BepInExPack_V_Rising](https://thunderstore.io/c/v-rising/p/BepInEx/BepInExPack_V_Rising/) 1.733.2 (mod managers install it for you)
-- SteamVR and a headset that works with it. Tested with a Steam Frame streaming wirelessly through Steam Link.
+- SteamVR and a headset that works with it. Tested with a Steam Frame streaming wirelessly through Steam Link, and a Meta Quest 3.
 - A strong graphics card: the game renders the world once per eye, by default at SteamVR's full recommended resolution. On an RTX 2070 that runs at roughly 25-45 fps depending on the scene, and `View.RenderScale` 0.7 gets roughly 40-60.
 
 ## Installing
@@ -131,6 +131,7 @@ Common problems:
 - **The game starts without mods** (no BepInEx console window): start it with **Modded** in the mod manager, not from Steam, and check that BepInExPack_V_Rising is in **My mods**. If you imported a zip, the import dialog should have shown the mod's version number, not 0.0.0.
 - **The BepInEx console shows `System.AccessViolationException`:** your antivirus is probably blocking BepInEx. Allow it in your security software.
 - **Nothing in the headset:** make sure SteamVR is installed and sees your headset, then press F8 in the game. The log says why VR didn't start (look for lines with `VRisingVR`).
+- **Blurry picture on a Quest 3 with ALVR:** in ALVR's **Settings > Video**, set **Bitrate** to **Adaptive** with a minimum of 100 Mbps (a constant 30 Mbps is blurry), set **Emulated headset view resolution** and **Transcoding view resolution** to **Scale 1.4** (lower both if it's too slow), and turn off **Foveated encoding** and **Clientside foveation**. In SteamVR's **Settings > Video**, set **Render Resolution** to **Custom**, 100%.
 - **Low frame rate:** see the performance tips above. The log prints a `Perf:` line every 5 seconds with the frame rate and GPU time.
 - **Something looks wrong:** press F5 for a 3D capture and include it, along with the log, when you report the problem (see below).
 

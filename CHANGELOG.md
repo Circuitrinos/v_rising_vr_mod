@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.5
+
+No changes to the mod itself.
+
+- Tested on a Meta Quest 3. The README's troubleshooting has the ALVR settings that keep the picture sharp.
+- VRisingVR Passthrough now also works on a Quest 3 streaming with ALVR. Virtual Desktop's own Desk Passthrough is mentioned, but not tested.
+
 ## 1.0.4
 
 No changes to the mod itself.
