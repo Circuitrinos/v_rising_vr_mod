@@ -1,6 +1,6 @@
 # VRisingVR Passthrough
 
-Play V Rising in VR like a 3D board game, and see your real keyboard and mouse whenever you need them. This is the passthrough edition of [VRisingVR](https://thunderstore.io/c/v-rising/p/Circuitrinos/VRisingVR/) for the **Steam Frame**: the same mod, plus a window onto your desk. Hold your mouse's rear side button and a window opens in the game where your keyboard and mouse are, showing them and your hands through the headset's passthrough. It needs a community tool on the headset (see "Seeing your desk"). Without a Steam Frame, or if you play with a gamepad, install VRisingVR instead.
+Play V Rising in VR like a 3D board game, and see your real keyboard and mouse whenever you need them. This is the passthrough edition of [VRisingVR](https://thunderstore.io/c/v-rising/p/Circuitrinos/VRisingVR/) for the **Steam Frame** and the **Meta Quest 3**: the same mod, plus a window onto your desk. Hold your mouse's rear side button and a window opens in the game where your keyboard and mouse are, showing them and your hands through the headset's passthrough. Your headset has to turn the window's green into passthrough: a community tool does that on the Steam Frame, and the ALVR streaming app on a Quest 3 (see "Seeing your desk"). If you play with a gamepad, or your headset can't do this, install VRisingVR instead.
 
 The game's own top-down camera is shown in stereo 3D in your headset, so the world sits in front of you like a living tabletop. You can lean in and look around it with your head, and the game's camera rotation and zoom still work. You keep playing with mouse and keyboard as usual.
 
@@ -16,8 +16,8 @@ The mod is client-side only. It doesn't change anything on the server, so there'
 
 - V Rising 1.1.13 on Windows (Steam), running on Direct3D 11, the game's default
 - [BepInExPack_V_Rising](https://thunderstore.io/c/v-rising/p/BepInEx/BepInExPack_V_Rising/) 1.733.2 (mod managers install it for you)
-- SteamVR and a headset that works with it. Tested with a Steam Frame streaming wirelessly through Steam Link.
-- For the desk window: a Steam Frame, streaming from your PC through SteamVR, with the community chroma-key tool installed on it (see "Seeing your desk"). On other headsets the rest of the mod works, but the window is just a green rectangle.
+- SteamVR and a headset that works with it. Tested with a Steam Frame streaming wirelessly through Steam Link, and a Meta Quest 3 streaming with ALVR.
+- For the desk window: a Steam Frame streaming from your PC through SteamVR, with the community chroma-key tool installed on it, or a Meta Quest 3 streaming with ALVR, with its chroma key on (see "Seeing your desk"). With other headsets or streaming apps the rest of the mod works, but the window is just a green rectangle.
 - A strong graphics card: the game renders the world once per eye, by default at SteamVR's full recommended resolution. On an RTX 2070 that runs at roughly 25-45 fps depending on the scene, and `View.RenderScale` 0.7 gets roughly 40-60.
 
 ## Installing
@@ -119,11 +119,11 @@ The F4 panel covers the settings you'll want to adjust while playing. All of the
 - Keep the game's resolution at your monitor's. The VR HUD is drawn at the window's resolution, so lowering it only blurs the HUD.
 - Close other programs that use the graphics card.
 
-## Seeing your desk (Steam Frame)
+## Seeing your desk
 
-SteamVR doesn't let PC games use the Steam Frame's cameras. Instead, the mod draws a pure green rectangle into the picture, lying where your keyboard and mouse are. A community tool on the headset, [steam-frame-chroma-key](https://github.com/spyjacob/steam-frame-chroma-key), then shows the headset's own passthrough wherever the picture is that green. So the rectangle becomes a window onto your desk, with your real keyboard, mouse and hands in it. The camera image never leaves the headset.
+SteamVR doesn't let PC games use a headset's cameras. Instead, the mod draws a pure green rectangle into the picture, lying where your keyboard and mouse are, and the headset shows its own passthrough wherever the picture is that green. On the Steam Frame a community tool, [steam-frame-chroma-key](https://github.com/spyjacob/steam-frame-chroma-key), does that; on a Quest 3, the ALVR streaming app does. So the rectangle becomes a window onto your desk, with your real keyboard, mouse and hands in it. The camera image never leaves the headset.
 
-**Setting up the headset (once).** The tool is unofficial and not part of this mod; its README has the details.
+**Setting up a Steam Frame (once).** The tool is unofficial and not part of this mod; its README has the details.
 
 1. On the headset, turn on Developer Mode (**Steam Settings > System > Enable Developer Mode**), set a password under **Developer > Set User Password**, and note the headset's IP address from its Wi-Fi settings.
 2. On your PC, open PowerShell and log in to the headset with `ssh steamos@<headset-ip>`.
@@ -151,6 +151,22 @@ SteamVR doesn't let PC games use the Steam Frame's cameras. Instead, the mod dra
    The `0.12` and `0.06` are a tighter key than the tool suggests: only colours very close to pure green become passthrough. With its looser default, bright greens in the game, such as sunlit grass or green spell effects, would show your room too. You can change both later with the **Chroma Key** panel's **Similarity** and **Edge softness** sliders in the SteamVR dashboard.
 
 You don't need the tool's PC programs. After a SteamOS update on the headset, turn keying off in the panel and run the `mrkey.sh` line again; if it reports "unexpected shader layout", leave keying off until the tool is updated. To remove the tool, run `./uninstall.sh` in `~/mr-chroma` while SteamVR is running.
+
+**Setting up a Meta Quest 3 (once).** Tested with ALVR 20.14, a free app that streams SteamVR to the Quest and can turn a colour into passthrough.
+
+1. Install ALVR. On your PC, download `alvr_launcher_windows.zip` from [ALVR's releases](https://github.com/alvr-org/ALVR/releases), extract it, run `ALVR Launcher.exe`, add and install a version, click **Launch** and follow the setup wizard. Get the ALVR app on the Quest from the Meta store, or with the launcher's **Install APK**.
+2. Open ALVR on the Quest, then click **Trust** next to it in the **Devices** tab on your PC.
+3. In ALVR's **Settings > Video**:
+   - **Passthrough**: on, with the mode **RGB chroma key**. Its defaults (green 0, 255, 0, distance threshold 85, feathering 0.05) match the mod's window.
+   - **Bitrate**: **Adaptive**, with a minimum of **100 Mbps**. At a constant 30 Mbps the picture is blurry.
+   - **Emulated headset view resolution** and **Transcoding view resolution**: **Scale 1.4**, for sharpness close to the Steam Frame's (about 32-36 fps on an RTX 2070). Lower both if it's too slow.
+   - **Foveated encoding** and **Clientside foveation**: off. The Quest 3 has no eye tracking, so they keep only the middle of the view sharp, and in the tabletop view you look down at the board with your eyes, below the middle.
+4. In SteamVR's **Settings > Video**, set **Render Resolution** to **Custom**, 100%.
+5. Restart SteamVR with the button at the bottom right of the ALVR window.
+
+Connect your PC to the router with a cable, and put the Quest on the router's 5 GHz or 6 GHz Wi-Fi. ALVR's **Statistics** tab shows the bitrate you get.
+
+**Not tested:** Virtual Desktop has a chroma-key **VR Passthrough** option (in its Streaming tab) that should turn the window into passthrough the same way, set to green (0, 255, 0). It also has its own **Desk Passthrough**, which shows your desk without this edition. Steam Link and Air Link or Quest Link can't turn a colour into passthrough, so with them the window stays green.
 
 **Using it.** Hold your mouse's rear side button and look at your desk. The HUD steps aside while you hold it. The window lies flat on the desk, at first 45 cm in front of and below where your eyes were when you last re-centered (F9, and whenever you put the headset on). To line it up with your keyboard and mouse:
 
@@ -181,7 +197,7 @@ To pick other keys, open the **F4** panel, click one of the two key rows at the 
 - Where two characters' bars overlap on screen, they're drawn in plain colours instead of the game's own graphics.
 - No motion controller support. The headset is your view; you play with mouse and keyboard.
 - Built for V Rising 1.1.13. A game update can break it until the mod is updated.
-- The desk window depends on the unofficial chroma-key tool, which reaches into SteamVR's internals on the headset. A SteamOS update can stop it working until the tool is updated.
+- On the Steam Frame, the desk window depends on the unofficial chroma-key tool, which reaches into SteamVR's internals on the headset. A SteamOS update can stop it working until the tool is updated.
 - Anything in the game close enough to the key colour also shows your room. With the tighter key above this is rare.
 
 ## Troubleshooting
@@ -197,7 +213,8 @@ Common problems:
 - **The BepInEx console shows `System.AccessViolationException`:** your antivirus is probably blocking BepInEx. Allow it in your security software.
 - **Nothing in the headset:** make sure SteamVR is installed and sees your headset, then press F8 in the game. The log says why VR didn't start (look for lines with `VRisingVR`).
 - **Low frame rate:** see the performance tips above. The log prints a `Perf:` line every 5 seconds with the frame rate and GPU time.
-- **The desk window is a green rectangle:** the headset isn't keying it. Check that the **Chroma Key** panel in the SteamVR dashboard says ON and that its colour matches `DeskWindow.KeyColor`. If the panel is missing, set the tool up again (see "Seeing your desk").
+- **The desk window is a green rectangle:** the headset isn't turning it into passthrough. On a Steam Frame, check that the **Chroma Key** panel in the SteamVR dashboard says ON and that its colour matches `DeskWindow.KeyColor`; if the panel is missing, set the tool up again. On a Quest 3, check that ALVR's **Passthrough** is on, with the mode **RGB chroma key** (see "Seeing your desk").
+- **Blurry picture on a Quest 3 with ALVR:** raise ALVR's bitrate, set its two view resolutions and turn off its foveation, as in "Setting up a Meta Quest 3".
 - **Patches of the game show your room:** lower **Similarity** in the headset's Chroma Key panel.
 - **The window is in the wrong place:** press F9 while sitting normally, then hold G and move the mouse (and scroll to turn) until the window is over your keyboard.
 - **Something looks wrong:** press F5 for a 3D capture and include it, along with the log, when you report the problem (see below).

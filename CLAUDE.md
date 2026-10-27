@@ -276,6 +276,16 @@ The user asked to see their keyboard and mouse while playing. It ships as a **se
 - **User verdict after the second test:** no false keying at 0.12/0.06, and the alignment is fine with the default placement.
 - **Third test (2026-10-23 ~20:27):** moving with G and turning with the wheel 'works well' (the user). The InputSystem wheel read works, with no warning. The user ended at 0.36 m ahead, 0.16 m right, turned 10 degrees (mouse to the right of the keyboard). The defaults stay generic.
 - **Ready for release:** every desk window feature has been checked on hardware.
+- **Released:** 1.1.0 on 2026-10-25 ~01:08 UTC (with VRisingVR 1.0.4), https://thunderstore.io/c/v-rising/p/Circuitrinos/VRisingVR_Passthrough/. It's visible (unreviewed), in Client and Oakveil Update.
+  - Tag `passthrough-v1.1.0` is on 614a27e. It was force-pushed: the first push had caught f351117, before the README check step.
+  - This edition's tags are `passthrough-vX.Y.Z`.
+- **Meta Quest 3 (the user, 2026-10-26).** VRisingVR works. The desk window works with **ALVR 20.14** (streamer 20.14.1, headset app 20.14.0): Settings > Video > Passthrough, RGB chroma key at its defaults (0/255/0, distance threshold 85, feathering 0.05). Getting the picture sharp took these steps:
+  - ALVR's emulated view gave 980x1100 per eye. Setting emulated and transcoding view resolution to Scale 1.0 plus SteamVR Render Resolution custom 100% gave 1664x1760. Scale 1.4 gave 2336x2464, ~32-36 fps on the RTX 2070.
+  - Foveated encoding and clientside foveation off. There's no eye tracking, and the board sits ~30 degrees below the head direction, in the fixed foveation's periphery.
+  - **The blur was the bitrate:** ALVR had ConstantMbps 30. Adaptive with a minimum of 100 Mbps looked 'comparable to the Steam Frame'. The encoder preset stayed on Speed.
+  - Steam Link and Air Link/Quest Link have no chroma key. Virtual Desktop has one (Streaming > VR Passthrough) and its own Desk Passthrough; **neither is tested**, and the README says so.
+  - The Steam Frame's USB adapter (Realtek 8832CU 'for Valve') is a client joining the Frame's own 6 GHz network `frame_<id>` (WPA3-H2E, 2.4 Gbps). The Quest can't use it.
+  - 1.1.1 (README only) adds the tested Quest 3 + ALVR setup.
 - **Camera routes that failed (2026-10-23; details in commit 4d14b11):**
   - `/dev/video99` is SteamVR's `v4l2cam` mirror of the `system.HeadsetView` overlay (what the headset displays), not a camera.
   - `IVRTrackedCamera_006` reports a camera but `GetCameraFrameSize` fails.

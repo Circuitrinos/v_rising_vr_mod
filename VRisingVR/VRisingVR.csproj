@@ -5,7 +5,7 @@
     <RootNamespace>VRisingVR</RootNamespace>
     <Description>Tabletop-style VR camera for V Rising, with a window onto your desk for the Steam Frame (client only)</Description>
     <!-- The one place the version lives: the plugin, the Thunderstore manifest and the zip names use it. -->
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
@@ -34,7 +34,7 @@
     <!-- The Thunderstore team that uploads the package. The Thunderstore zip is named Team-Name-Version.zip, like
          Thunderstore's own downloads, because r2modman's "Import local mod" takes the author from that file name. -->
     <ThunderstoreTeam>Circuitrinos</ThunderstoreTeam>
-    <ThunderstoreDescription>VRisingVR with a window onto your desk for the Steam Frame: hold a mouse side button to see your keyboard, mouse and hands in the headset's passthrough (needs a community chroma-key tool). Use it instead of VRisingVR. Client-side only. Needs SteamVR.</ThunderstoreDescription>
+    <ThunderstoreDescription>VRisingVR with a window onto your desk for the Steam Frame and Quest 3: hold a mouse side button to see your keyboard, mouse and hands in the headset's passthrough, via chroma key. Use it instead of VRisingVR. Client-side only. Needs SteamVR.</ThunderstoreDescription>
     <ThunderstoreWebsite>https://github.com/Circuitrinos/v_rising_vr_mod</ThunderstoreWebsite>
     <ThunderstoreDependency>BepInEx-BepInExPack_V_Rising-1.733.2</ThunderstoreDependency>
     <RepoDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..'))\</RepoDir>

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1
+
+No changes to the mod itself.
+
+- Tested on a Meta Quest 3 streaming with ALVR 20.14: the README's "Seeing your desk" has a Quest 3 setup with ALVR's chroma key and the video settings that keep the picture sharp.
+- Virtual Desktop's chroma-key passthrough and Desk Passthrough are mentioned, but not tested.
+
 ## 1.1.0 (in development)
 
 First release of **VRisingVR Passthrough**, VRisingVR 1.0.3 plus a window onto your desk for the Steam Frame. It is a separate Thunderstore package and replaces VRisingVR (same plugin and settings file).
